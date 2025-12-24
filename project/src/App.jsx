@@ -6,7 +6,7 @@ import Assessment from "./Component/Assessment.jsx";
 import Musculoskeletal from "./Component/Musculoskeletal.jsx";
 import Obesity from "./Component/Obesity.jsx";
 import Client from "./Component/Client.jsx";
-import Pilates from "./Component/pilates.jsx";
+import Pilates from "./Component/Pilates.jsx";
 import Reports from "./Component/Reports.jsx";
 import Bill from "./Component/Bill.jsx";
 import Expenses from "./Component/Expenses.jsx";
