@@ -1,7 +1,7 @@
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
 
 const fetchApi = async (url, options = {}) => {
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem("webapptoken");
 
   const response = await fetch(`${BASE_URL}${url}`, {
     ...options,

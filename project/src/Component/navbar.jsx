@@ -1,19 +1,17 @@
-import { Link } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import AuthModal from "./AuthModal";
 
 const NavigationTabs = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [authModal, setAuthModal] = useState(null); // login | signup | null
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("webapptoken"));
-  }, []);
+  const navigate = useNavigate();
+  const isLoggedIn = !!localStorage.getItem("webapptoken");
 
   const logout = () => {
     localStorage.removeItem("webapptoken");
-    setIsLoggedIn(false);
+    navigate("/auth");
   };
 
   const tabs = [
@@ -77,39 +75,23 @@ const NavigationTabs = () => {
                 </Link>
               )
             )}
-
-            {/* AUTH BUTTONS */}
-            {!isLoggedIn ? (
-              <>
-                <button
-                  onClick={() => setAuthModal("login")}
-                  className="text-blue-600"
-                >
-                  Login
-                </button>
-                
-              </>
-            ) : (
+          </div>
+          <div className="space-x-6">
+            {isLoggedIn ? (
               <button
                 onClick={logout}
                 className="bg-red-500 text-white px-4 py-1 rounded"
               >
                 Logout
               </button>
+            ) : (
+              <Link to="/auth" className="text-blue-600">
+                Login
+              </Link>
             )}
           </div>
         </div>
       </nav>
-
-      {/* MODAL */}
-      {authModal && (
-        <AuthModal
-          type={authModal}
-          onClose={() => setAuthModal(null)}
-          onAuthSuccess={() => setIsLoggedIn(true)}
-          onSwitchType={(type) => setAuthModal(type)}
-        />
-      )}
     </>
   );
 };

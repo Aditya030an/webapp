@@ -1,51 +1,58 @@
-import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./routers/ProtectedRoute.jsx";
+import AuthPage from "./pages/AuthPage";
 import Navbar from "./Component/navbar.jsx";
+
 import Home from "./Component/Home";
-import Assessment from "./Component/Assessment.jsx";
-import Musculoskeletal from "./Component/Musculoskeletal.jsx";
-import Obesity from "./Component/Obesity.jsx";
-import Client from "./Component/Client.jsx";
-import Pilates from "./Component/Pilates.jsx";
-import Reports from "./Component/Reports.jsx";
-import Bill from "./Component/Bill.jsx";
-import Expenses from "./Component/Expenses.jsx";
-import Rent from "./Component/Rent.jsx";
-import Salary from "./Component/Salary.jsx";
-import Inventory from "./Component/Inventory.jsx";
-import Total from "./Component/Total.jsx";
-import Attendence from "./Component/Attendence.jsx";
-import TreatmentPlan from "./Component/TreatmentPlan.jsx";
+import Assessment from "./Component/Assessment";
+import Musculoskeletal from "./Component/Musculoskeletal";
+import Obesity from "./Component/Obesity";
+import Pilates from "./Component/Pilates";
+import TreatmentPlan from "./Component/TreatmentPlan";
+import Client from "./Component/Client";
+import Reports from "./Component/Reports";
+import Bill from "./Component/Bill";
+import Expenses from "./Component/Expenses";
+import Inventory from "./Component/Inventory";
+import Salary from "./Component/Salary";
+import Rent from "./Component/Rent";
+import Total from "./Component/Total";
+import Attendence from "./Component/Attendence";
 
 function App() {
   return (
     <Router>
-      <div>
-        <Navbar />
+      <Navbar />
 
-        {/* Define routes for Home only */}
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/Assessment" element={<Assessment />} />
-          <Route path="/musculoskeletal" element={<Musculoskeletal />} />
-          <Route path="/Obesity" element={<Obesity />} />
-          <Route path="/Pilates" element={<Pilates />} />
-          <Route path="/TreatmentPlan" element={<TreatmentPlan />} />
-          <Route path="/Client" element={<Client />} />
-          <Route path="/Reports" element={<Reports />} />
-          <Route path="/Bill" element={<Bill />} />
-          <Route path="/Expenses" element={<Expenses />} />
-          <Route path="/Investory" element={<Inventory />} />
-          <Route path="/Salary" element={<Salary />} />
-          <Route path="/Rent" element={<Rent />} />
-          <Route path="/Total" element={<Total />} />
-          <Route path="/Attendence" element={<Attendence />} />
-          <Route path="/neurological/:id" element={<Assessment />} />
-          <Route path="/musculoskeletal/:id" element={<Musculoskeletal />} />
-          <Route path="/obesity/:id" element={<Obesity />} />
-          <Route path="/pilates/:id" element={<Pilates />} />
-        </Routes>
-      </div>
+      <Routes>
+        {/* PUBLIC */}
+        <Route path="/auth" element={<AuthPage />} />
+
+        {/* PROTECTED */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
+        <Route path="/musculoskeletal" element={<ProtectedRoute><Musculoskeletal /></ProtectedRoute>} />
+        <Route path="/obesity" element={<ProtectedRoute><Obesity /></ProtectedRoute>} />
+        <Route path="/pilates" element={<ProtectedRoute><Pilates /></ProtectedRoute>} />
+        <Route path="/treatmentPlan" element={<ProtectedRoute><TreatmentPlan /></ProtectedRoute>} />
+        <Route path="/client" element={<ProtectedRoute><Client /></ProtectedRoute>} />
+        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+        <Route path="/bill" element={<ProtectedRoute><Bill /></ProtectedRoute>} />
+        <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
+        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+        <Route path="/salary" element={<ProtectedRoute><Salary /></ProtectedRoute>} />
+        <Route path="/rent" element={<ProtectedRoute><Rent /></ProtectedRoute>} />
+        <Route path="/total" element={<ProtectedRoute><Total /></ProtectedRoute>} />
+        <Route path="/attendence" element={<ProtectedRoute><Attendence /></ProtectedRoute>} />
+      </Routes>
     </Router>
   );
 }
