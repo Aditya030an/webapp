@@ -41,9 +41,8 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-96 relative">
-
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 px-4">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md md:max-w-lg p-6 md:p-8 relative">
         {/* Close Icon */}
         <button
           onClick={onClose}
@@ -52,18 +51,17 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
           <AiOutlineClose size={22} />
         </button>
 
-        <h2 className="text-xl font-bold mb-4 capitalize text-center">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 capitalize text-center">
           {type === "login" ? "Login" : "Sign Up"}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-
           {type === "signup" && (
             <input
               type="text"
               name="name"
               placeholder="Name"
-              className="w-full border px-3 py-2 rounded"
+              className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               onChange={handleChange}
               required
             />
@@ -73,7 +71,7 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
             type="email"
             name="email"
             placeholder="Email"
-            className="w-full border px-3 py-2 rounded"
+            className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
             onChange={handleChange}
             required
           />
@@ -84,7 +82,7 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
               type={showPassword ? "text" : "password"}
               name="password"
               placeholder="Password"
-              className="w-full border px-3 py-2 rounded pr-10"
+              className="w-full border px-3 py-2 rounded pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500"
               onChange={handleChange}
               required
             />
@@ -101,7 +99,7 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
             </button>
           </div>
 
-          <button className="w-full bg-blue-600 text-white py-2 rounded">
+          <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors">
             {type === "login" ? "Login" : "Sign Up"}
           </button>
         </form>
