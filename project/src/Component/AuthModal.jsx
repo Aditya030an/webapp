@@ -10,6 +10,7 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
+  const [loading , setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });

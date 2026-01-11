@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import AssessmentDetailsModal from "./showAssesmentDetails/AssessmentDetailsModal";
 
 const Obesity = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const patient = location?.state?.patient;
+  const patientDetail = location?.state?.patient?.personalDetails;
+  const patient_id = location?.state?.patient?._id;
+
   const { id } = useParams();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     age: "",
-    sex: "",
+    gender: "",
     height: "",
     weight: "",
     bmi: "",
@@ -21,102 +30,105 @@ const Obesity = () => {
     summary: "",
   });
 
-  const [history, setHistory] = useState([]);
+  const [activeRecords, setActiveRecords] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const activeTab = "Obesity Management";
+
+  const formatDateTime = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const pickAllowedFields = (source, allowedKeys) => {
+    const result = {};
+    allowedKeys.forEach((key) => {
+      if (source[key] !== undefined) {
+        result[key] = source[key];
+      }
+    });
+    return result;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const [history, setHistory] = useState([]);
+
   const handleChartChange = (index, field, value) => {
     const newChart = [...formData.weightChart];
     newChart[index] = { ...newChart[index], [field]: value };
     setFormData((prev) => ({ ...prev, weightChart: newChart }));
   };
-  useEffect(() => {
-    const fetchPersonalDetails = async () => {
-      try {
-        if (id) {
-          const dataResponse = await fetch(
-            `${
-              import.meta.env.VITE_BACKEND_URL
-            }/api/assessment/getobesity/${id}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                token: localStorage.getItem("token"),
-              },
-            }
-          );
-          const dataResult = await dataResponse.json();
-          console.log("data", dataResult);
-          if (dataResult.success && dataResult.form) {
-            setFormData((prev) => ({
-              ...prev,
-              ...dataResult.form, // This will spread all matching keys into formData
-            }));
-            setHistory(dataResult?.form?.history);
-          }
-        } else {
-          const response = await fetch(
-            `${
-              import.meta.env.VITE_BACKEND_URL
-            }/api/enquiry/getPersonalDetails`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                token: localStorage.getItem("token"),
-              },
-            }
-          );
-          const result = await response.json();
-          const data = result?.enquiryPersonalDetails?.[0];
-          console.log(data);
-          setFormData((prev) => ({
-            ...prev,
-            fullName: data?.patientName,
-            age: data?.age,
-            sex: data?.sex,
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching personal details:", error);
-      }
-    };
 
-    fetchPersonalDetails();
-  }, [id]);
+  useEffect(() => {
+    if (patientDetail) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: patientDetail?.name,
+        age: patientDetail?.age,
+        gender: patientDetail?.gender,
+      }));
+    }
+  }, [patientDetail]);
+
+  useEffect(() => {
+    const forms = patient?.assessment?.obesityFormId;
+
+    if (forms?.length) {
+      const lastForm = forms[forms.length - 1];
+
+      const allowedKeys = Object.keys(formData);
+
+      const filteredData = pickAllowedFields(lastForm, allowedKeys);
+
+      setFormData((prev) => ({
+        ...prev,
+        ...filteredData,
+      }));
+
+      setActiveRecords([...forms].reverse());
+    }
+  }, [patient]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payLoad = {
+      patientId: patient_id,
+      formData: formData,
+    };
+    setLoading(true);
 
     try {
-      const endpoint = id
-        ? `${
-            import.meta.env.VITE_BACKEND_URL
-          }/api/assessment/updateObesity/${id}`
-        : `${import.meta.env.VITE_BACKEND_URL}/api/assessment/obesity`;
-      const method = id ? "PUT" : "POST";
-
-      const response = await fetch(endpoint, {
+      const endPoint = `${
+        import.meta.env.VITE_BACKEND_URL
+      }/api/assessment/obesity`;
+      const method = "POST";
+      const response = await fetch(endPoint, {
         method,
         headers: {
           "Content-Type": "application/json",
           token: localStorage.getItem("token"),
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payLoad),
       });
-
       const result = await response.json();
-      console.log(result);
       if (result.success) {
         alert(result.message);
         setHistory(result?.updatedForm?.history);
         setFormData({
           fullName: "",
           age: "",
-          sex: "",
+          gender: "",
           height: "",
           weight: "",
           bmi: "",
@@ -130,21 +142,26 @@ const Obesity = () => {
           weightChart: Array(5).fill({ date: "", before: "", after: "" }),
           summary: "",
         });
+        navigate(`/PatientDetails/${patient_id}`);
+      } else {
+        alert(result?.message);
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("Error submitting form");
+      console.log("error inside the nero", error);
+      alert("error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <div>
+      {/* <div>
         <h1 className="text-2xl font-bold mb-4">History</h1>
         {history?.length === 0 ? (
           <p>No history found</p>
         ) : (
-          history.map((item, index) => (
+          history?.map((item, index) => (
             <div key={index} className="bg-white shadow-md rounded-xl p-6 mb-6">
               <p className="text-sm text-gray-600 mb-2">
                 <strong>{index + 1} </strong> <strong>Updated At:</strong>{" "}
@@ -223,6 +240,28 @@ const Obesity = () => {
             </div>
           ))
         )}
+      </div> */}
+      <div>
+        <h2>History</h2>
+        {activeRecords.length === 0 ? (
+          <p className="text-sm text-gray-500">No {activeTab} records</p>
+        ) : (
+          <ul className="text-sm list-disc ml-5 p-2">
+            {activeRecords?.map((item, index) => (
+              <li
+                key={item?._id}
+                onClick={() => {
+                  setSelectedRecord(item);
+                  setOpenModal(true);
+                }}
+                className="cursor-pointer "
+              >
+                {activeTab} Assessment #{index + 1} -{" "}
+                {formatDateTime(item?.createdAt)}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <form
         onSubmit={handleSubmit}
@@ -260,15 +299,16 @@ const Obesity = () => {
               <input
                 className="input"
                 type="text"
-                name="sex"
-                value={formData.sex}
+                name="gender"
+                value={formData.gender}
                 onChange={handleChange}
-                placeholder="Sex"
+                placeholder="Gender"
                 readOnly
               />
               <input
                 className="input"
-                type="text"
+                type="number"
+                min={0}
                 name="height"
                 value={formData.height}
                 onChange={handleChange}
@@ -276,7 +316,8 @@ const Obesity = () => {
               />
               <input
                 className="input"
-                type="text"
+                type="number"
+                min={0}
                 name="weight"
                 value={formData.weight}
                 onChange={handleChange}
@@ -284,7 +325,7 @@ const Obesity = () => {
               />
               <input
                 className="input"
-                type="text"
+                type="number"
                 name="bmi"
                 value={formData.bmi}
                 onChange={handleChange}
@@ -438,7 +479,7 @@ const Obesity = () => {
             <div className="space-x-4">
               <button
                 type="submit"
-                disabled={id && history?.length >= 2}
+                disabled={(id && history?.length >= 2) || loading}
                 className={`${
                   id
                     ? history?.length >= 2
@@ -447,7 +488,13 @@ const Obesity = () => {
                     : "bg-blue-700 hover:bg-blue-800"
                 } text-white px-8 py-3 rounded-lg transition`}
               >
-                {id ? "Update Evaluation" : "Submit Evaluation"}
+                {id
+                  ? loading
+                    ? "Updating..."
+                    : "Update Evaluation"
+                  : loading
+                  ? "Submitting..."
+                  : "Submit Evaluation"}
               </button>
 
               <button
@@ -461,6 +508,16 @@ const Obesity = () => {
           </div>
         </div>
       </form>
+      <AssessmentDetailsModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        data={selectedRecord}
+        title={`${activeTab} Assessment`}
+        assessmentType={activeTab}
+        onDownloadPdf={() => {
+          console.log("Download PDF for", activeTab, selectedRecord);
+        }}
+      />
     </div>
   );
 };

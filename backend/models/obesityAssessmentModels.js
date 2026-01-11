@@ -13,7 +13,7 @@ const weightChartEntrySchema = new mongoose.Schema(
 const ObesityFormSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   age: { type: Number, required: true },
-  sex: { type: String, required: true },
+  gender: { type: String, required: true },
   height: { type: String },
   weight: { type: String },
   bmi: { type: String },
@@ -29,12 +29,16 @@ const ObesityFormSchema = new mongoose.Schema({
 
   weightChart: [weightChartEntrySchema],
 
-  enquiryId: {
+  // enquiryId: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "enquiry",
+  //   required: true,
+  // },
+  patientId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "enquiry",
+    ref: "patient",
     required: true,
   },
-
   history: [
     {
       updatedAt: { type: Date, default: Date.now },
@@ -45,7 +49,8 @@ const ObesityFormSchema = new mongoose.Schema({
   summary: { type: String },
 
   submittedAt: { type: Date, default: Date.now },
-});
+},
+{ timestamps: true });
 
 const ObesityForm = mongoose.model("ObesityForm", ObesityFormSchema);
 export default ObesityForm;

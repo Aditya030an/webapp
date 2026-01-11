@@ -18,6 +18,7 @@ import Salary from "./Component/Salary";
 import Rent from "./Component/Rent";
 import Total from "./Component/Total";
 import Attendence from "./Component/Attendence";
+import PatientDetails from "./Component/PatientDetails.jsx";
 
 function App() {
   return (
@@ -52,6 +53,8 @@ function App() {
         <Route path="/rent" element={<ProtectedRoute><Rent /></ProtectedRoute>} />
         <Route path="/total" element={<ProtectedRoute><Total /></ProtectedRoute>} />
         <Route path="/attendence" element={<ProtectedRoute><Attendence /></ProtectedRoute>} />
+
+        <Route path="/PatientDetails/:id" element={<ProtectedRoute><PatientDetails /></ProtectedRoute>} />
       </Routes>
     </Router>
   );

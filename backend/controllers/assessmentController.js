@@ -1,4 +1,5 @@
 import enquiryModel from "../models/enquiryModels.js";
+import Patient from "../models/patientModel.js";
 import jwt from "jsonwebtoken";
 import neurologicalFormModel from "../models/neurologicalAssessmentModels.js";
 import musculoskeletalFormModel from "../models/musculoskeletalAssessmentModels.js";
@@ -9,41 +10,54 @@ import pilatesPhysioFormModel from "../models/pilatesAssessmentModels.js";
 // Route for creating an enquiry
 const createNeurologicalForm = async (req, res) => {
   try {
-    const contactNumber = req?.contactNumber;
-    const enquiryPersonalDetails = await enquiryModel?.find({ contactNumber });
+    const { patientId, formData } = req.body;
+    console.log("patient id", patientId);
+    console.log("formData", formData);
 
-    const enquiryId = enquiryPersonalDetails?.[0]?._id;
-    const { ...formData } = req.body;
-    // console.log("data inside backed", formData);
+    if (!patientId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId and formData are required",
+      });
+    }
 
-    const newForm = await neurologicalFormModel.create({
-      enquiryId,
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    // 1️⃣ Create neurological form
+    const newNeurologicalForm = await neurologicalFormModel.create({
+      patientId,
       ...formData,
     });
 
-    // Update Enquiry with neurologicalFormId (singular)
-    const newEnquiry = await enquiryModel.findByIdAndUpdate(
-      enquiryId,
+    // 2️⃣ Push neurological form ID (BEST way)
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      patientId,
       {
-        neurologicalFormId: newForm._id,
-        patientName: formData?.patientName,
-        age: formData?.age,
-        sex: formData?.sex,
-        occupation: formData?.occupation,
-        contactNumber: formData?.contactNumber,
-        chiefComplaint: formData?.chiefComplaint,
+        $push: {
+          "assessment.neurologicalFormId": newNeurologicalForm._id,
+        },
       },
-      { new: true, runValidators: true }
+      { new: true }
     );
-    // console.log("new form", newForm);
-    // console.log("enquiry id", newEnquiry);
 
-    res.status(200).json({
-      message: "Neurological form created successfully.",
+    return res.status(201).json({
       success: true,
+      message: "Neurological form created successfully",
+      neuro: newNeurologicalForm,
+      patient: updatedPatient,
     });
   } catch (err) {
-    console.log(err);
+    console.error("Neurological error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -120,41 +134,52 @@ const updateNeurologicalForm = async (req, res) => {
 
 const createMusculoskeletalForm = async (req, res) => {
   try {
-    const contactNumber = req?.contactNumber;
-    const enquiryPersonalDetails = await enquiryModel?.find({ contactNumber });
+    const { patientId, formData } = req.body;
 
-    const enquiryId = enquiryPersonalDetails?.[0]?._id;
-    const { ...formData } = req.body;
-    // console.log("data musculoskeletal inside backed", formData);
+    console.log("Musculoskeletal form", formData);
 
-    const newForm = await musculoskeletalFormModel.create({
-      enquiryId,
+    if (!patientId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId and formData are required",
+      });
+    }
+
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    const newMusculoskeletalForm = await musculoskeletalFormModel.create({
+      patientId,
       ...formData,
     });
 
-    // Update Enquiry with neurologicalFormId (singular)
-    const newEnquiry = await enquiryModel.findByIdAndUpdate(
-      enquiryId,
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      patientId,
       {
-        musculoskeletalFormId: newForm._id,
-        patientName: formData?.patientName,
-        age: formData?.age,
-        sex: formData?.sex,
-        occupation: formData?.occupation,
-        contactNumber: formData?.contactNumber,
-        chiefComplaint: formData?.chiefComplaint,
+        $push: {
+          "assessment.musculoskeletalFormId": newMusculoskeletalForm._id,
+        },
       },
-      { new: true, runValidators: true }
+      { new: true }
     );
-    // console.log("new form musculoskeletalFormModel", newForm);
-    // console.log("enquiry id", newEnquiry);
 
-    res.status(200).json({
-      message: "Musculoskeletal form created successfully.",
+    return res.status(201).json({
       success: true,
+      message: "Musculoskeletal form created successfully",
+      musculo: newMusculoskeletalForm,
+      patient: updatedPatient,
     });
   } catch (err) {
-    console.log(err);
+    console.log("Musculoskeletal error", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -231,38 +256,48 @@ const updateMusculoskeletalForm = async (req, res) => {
 
 const createObesityForm = async (req, res) => {
   try {
-    const contactNumber = req?.contactNumber;
-    const enquiryPersonalDetails = await enquiryModel?.find({ contactNumber });
+    const { patientId, formData } = req.body;
 
-    const enquiryId = enquiryPersonalDetails?.[0]?._id;
-    const { ...formData } = req.body;
-    // console.log("data musculoskeletal inside backed", formData);
+    if (!patientId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId and formData are required",
+      });
+    }
+    const patient = await Patient.findById(patientId);
 
-    const newForm = await obesityFormModel.create({
-      enquiryId,
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    const newObesityForm = await obesityFormModel.create({
+      patientId,
       ...formData,
     });
 
-    const newEnquiry = await enquiryModel.findByIdAndUpdate(
-      enquiryId,
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      patientId,
       {
-        obesityFormId: newForm._id,
-        fullName: formData?.patientName,
-        age: formData?.age,
-        sex: formData?.sex,
+        $push: {
+          "assessment.obesityFormId": newObesityForm._id,
+        },
       },
-      { new: true, runValidators: true }
+      { new: true }
     );
-    // console.log("new form obesityForm", newForm);
-    // console.log("enquiry id", newEnquiry);
     res.status(201).json({
-      message: "Obesity form successfully submitted",
       success: true,
+      message: "Obesity form successfully submitted",
+      obesity: newObesityForm,
+      patient: updatedPatient,
     });
-  } catch (error) {
-    res.status(400).json({
-      message: "Failed to submit obesity form",
-      error: error.message,
+  } catch (err) {
+    console.error("Neurological error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
 };
@@ -338,38 +373,50 @@ const updateObesityForm = async (req, res) => {
 
 const createPilatesForm = async (req, res) => {
   try {
-    const contactNumber = req?.contactNumber;
-    const enquiryPersonalDetails = await enquiryModel?.find({ contactNumber });
+    const { patientId, formData } = req.body;
 
-    const enquiryId = enquiryPersonalDetails?.[0]?._id;
-    const { ...formData } = req.body;
-    // console.log("data pilates inside backed", formData);
+    if (!patientId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId and formData are required",
+      });
+    }
 
-    const newForm = await pilatesPhysioFormModel.create({
-      enquiryId,
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    const newPilatesForm = await pilatesPhysioFormModel.create({
+      patientId,
       ...formData,
     });
 
-    const newEnquiry = await pilatesPhysioFormModel.findByIdAndUpdate(
-      enquiryId,
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      patientId,
       {
-        pilatesFormId: newForm._id,
-        fullName: formData?.patientName,
-        age: formData?.age,
-        sex: formData?.sex,
+        $push: {
+          "assessment.pilatesPhysioFormId": newPilatesForm._id,
+        },
       },
-      { new: true, runValidators: true }
+      { new: true }
     );
     // console.log("new form pilatesForm", newForm);
     // console.log("enquiry id", newEnquiry);
     res.status(201).json({
-      message: "Pilates form successfully submitted",
       success: true,
+      message: "Pilates form successfully submitted",
+      pilates: newPilatesForm,
+      patient: updatedPatient,
     });
-  } catch (error) {
-    res.status(400).json({
-      message: "Failed to submit Pilates form",
-      error: error.message,
+  } catch (err) {
+    console.error("Neurological error:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
     });
   }
 };

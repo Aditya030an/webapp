@@ -18,10 +18,11 @@ import {
 
 const assessmentRouter = express.Router();
 
-assessmentRouter.post("/neurological", auth, createNeurologicalForm);
-assessmentRouter.post("/musculoskeletal", auth, createMusculoskeletalForm);
-assessmentRouter.post("/obesity", auth, createObesityForm);
-assessmentRouter.post("/pilates", auth, createPilatesForm);
+// assessmentRouter.post("/neurological", auth, createNeurologicalForm);
+assessmentRouter.post("/neurological", createNeurologicalForm);
+assessmentRouter.post("/musculoskeletal", createMusculoskeletalForm);
+assessmentRouter.post("/obesity", createObesityForm);
+assessmentRouter.post("/pilates", createPilatesForm);
 
 // get router
 assessmentRouter.get("/getneurological/:id", auth, getNeurologicalForm);

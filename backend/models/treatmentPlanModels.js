@@ -10,6 +10,11 @@ const treatmentPlanSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    patientId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref:"patient",
+      required: true,
+    },
   },
   { timestamps: true }
 );

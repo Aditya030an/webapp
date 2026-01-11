@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import AssessmentDetailsModal from "./showAssesmentDetails/AssessmentDetailsModal";
 const Pilates = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const patient = location?.state?.patient;
+  const patientDetail = location?.state?.patient?.personalDetails;
+  const patient_id = location?.state?.patient?._id;
+
   const { id } = useParams();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
     age: "",
@@ -15,6 +24,33 @@ const Pilates = () => {
     physiotherapistSummary: "",
   });
 
+  const [activeRecords, setActiveRecords] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const activeTab = "Pilates";
+
+  const formatDateTime = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const pickAllowedFields = (source, allowedKeys) => {
+    const result = {};
+    allowedKeys.forEach((key) => {
+      if (source[key] !== undefined) {
+        result[key] = source[key];
+      }
+    });
+    return result;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -23,83 +59,56 @@ const Pilates = () => {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    const fetchPersonalDetails = async () => {
-      try {
-        if (id) {
-          const dataResponse = await fetch(
-            `${
-              import.meta.env.VITE_BACKEND_URL
-            }/api/assessment/getpilates/${id}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                token: localStorage.getItem("token"),
-              },
-            }
-          );
-          const dataResult = await dataResponse.json();
-          console.log("data", dataResult);
-          if (dataResult.success && dataResult.form) {
-            setFormData((prev) => ({
-              ...prev,
-              ...dataResult.form, // This will spread all matching keys into formData
-            }));
-            setHistory(dataResult?.form?.history);
-          }
-        } else {
-          const response = await fetch(
-            `${
-              import.meta.env.VITE_BACKEND_URL
-            }/api/enquiry/getPersonalDetails`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                token: localStorage.getItem("token"),
-              },
-            }
-          );
-          const result = await response.json();
-          const data = result?.enquiryPersonalDetails?.[0];
-          console.log(data);
-          setFormData((prev) => ({
-            ...prev,
-            fullName: data?.patientName || "",
-            age: data?.age || "",
-            gender: data?.sex || "",
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching personal details:", error);
-      }
-    };
+    if (patientDetail) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: patientDetail?.name || "",
+        age: patientDetail?.age || "",
+        gender: patientDetail?.gender || "",
+      }));
+    }
+  }, [patientDetail]);
 
-    fetchPersonalDetails();
-  }, [id]);
+  useEffect(() => {
+    const forms = patient?.assessment?.pilatesPhysioFormId;
+
+    if (forms?.length) {
+      const lastForm = forms[forms.length - 1];
+
+      const allowedKeys = Object.keys(formData);
+
+      const filteredData = pickAllowedFields(lastForm, allowedKeys);
+
+      setFormData((prev) => ({
+        ...prev,
+        ...filteredData,
+      }));
+
+      setActiveRecords([...forms].reverse());
+    }
+  }, [patient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submitted Data:", formData);
-
+    const payLoad = {
+      patientId: patient_id,
+      formData: formData,
+    };
+    setLoading(true);
     try {
-      const endpoint = id
-        ? `${
-            import.meta.env.VITE_BACKEND_URL
-          }/api/assessment/updatePilates/${id}`
-        : `${import.meta.env.VITE_BACKEND_URL}/api/assessment/pilates`;
+      const endPoint = `${
+        import.meta.env.VITE_BACKEND_URL
+      }/api/assessment/pilates`;
+      const method = "POST";
 
-      const method = id ? "PUT" : "POST";
-
-      const response = await fetch(endpoint, {
+      const response = await fetch(endPoint, {
         method,
         headers: {
           "Content-Type": "application/json",
           token: localStorage.getItem("token"),
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payLoad),
       });
-
       const result = await response.json();
       console.log(result);
       if (result.success) {
@@ -117,60 +126,42 @@ const Pilates = () => {
           painAreas: "",
           physiotherapistSummary: "",
         });
+        navigate(`/PatientDetails/${patient_id}`);
+      } else {
+        alert(result.message);
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("Error submitting form");
+      console.log("error inside the nero", error);
+      alert("error");
+    } finally {
+      setLoading(false);
     }
   };
 
+  console.log("active record", activeRecords);
+  console.log("selected record", selectedRecord);
   return (
     <div>
       <div>
-        <h1 className="text-2xl font-bold mb-4">History</h1>
-        {history?.length === 0 ? (
-          <p>No history found</p>
+        <h2>History</h2>
+        {activeRecords.length === 0 ? (
+          <p className="text-sm text-gray-500">No {activeTab} records</p>
         ) : (
-          history.map((item, index) => (
-            <div key={index} className="bg-white shadow-md rounded-xl p-6 mb-6">
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>{index + 1} </strong> <strong>Updated At:</strong>{" "}
-                {new Date(item?.updatedAt).toLocaleString("en-IN")}
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <p>
-                  <strong>Full Name:</strong> {item?.data?.fullName}
-                </p>
-                <p>
-                  <strong>Age:</strong> {item?.data?.age}
-                </p>
-                <p>
-                  <strong>Gender:</strong> {item?.data?.gender}
-                </p>
-                <p>
-                  <strong>Medical History:</strong> {item?.data?.medicalHistory}
-                </p>
-                <p>
-                  <strong>Exercise Frequency:</strong>{" "}
-                  {item?.data?.exerciseFrequency}
-                </p>
-                <p>
-                  <strong>Pilates Goals:</strong> {item?.data?.pilatesGoals}
-                </p>
-                <p>
-                  <strong>Posture Notes:</strong> {item?.data?.postureNotes}
-                </p>
-                <p>
-                  <strong>Pain Areas:</strong> {item?.data?.painAreas}
-                </p>
-                <p>
-                  <strong>Physiotherapist Summary:</strong>{" "}
-                  {item?.data?.physiotherapistSummary}
-                </p>
-              </div>
-            </div>
-          ))
+          <ul className="text-sm list-disc ml-5 p-2">
+            {activeRecords?.map((item, index) => (
+              <li
+                key={item?._id}
+                onClick={() => {
+                  setSelectedRecord(item);
+                  setOpenModal(true);
+                }}
+                className="cursor-pointer "
+              >
+                {activeTab} Assessment #{index + 1} -{" "}
+                {formatDateTime(item?.createdAt)}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
       <form
@@ -334,7 +325,7 @@ const Pilates = () => {
             <div className="space-x-4">
               <button
                 type="submit"
-                disabled={id && history?.length >= 2}
+                disabled={(id && history?.length >= 2) || loading}
                 className={`${
                   id
                     ? history?.length >= 2
@@ -343,7 +334,13 @@ const Pilates = () => {
                     : "bg-blue-700 hover:bg-blue-800"
                 } text-white px-8 py-3 rounded-lg transition`}
               >
-                {id ? "Update Evaluation" : "Submit Evaluation"}
+                {id
+                  ? loading
+                    ? "Updating..."
+                    : "Update Evaluation"
+                  : loading
+                  ? "Submitting..."
+                  : "Submit Evaluation"}
               </button>
 
               <button
@@ -357,6 +354,16 @@ const Pilates = () => {
           </div>
         </div>
       </form>
+      <AssessmentDetailsModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        data={selectedRecord}
+        title={`${activeTab} Assessment`}
+        assessmentType={activeTab}
+        onDownloadPdf={() => {
+          console.log("Download PDF for", activeTab, selectedRecord);
+        }}
+      />
     </div>
   );
 };

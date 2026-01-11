@@ -1,18 +1,48 @@
 import billModel from "../models/billReportModels.js";
 import expensesModel from "../models/expensesReportModels.js";
 import inventoryModel from "../models/inventoryReportModels.js";
+import Patient from "../models/patientModel.js";
 import rentModel from "../models/rentReportModels.js";
 import salaryModel from "../models/salaryReportModels.js";
 const createBill = async (req, res) => {
   try {
-    const { ...formData } = req.body;
-    console.log(formData);
-    const newBill = new billModel(formData);
-    const savedBill = await newBill.save();
+    const { patientId, formData } = req.body;
+    console.log("patient id", patientId);
+    console.log("formData", formData);
+
+    if (!patientId || !formData) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId and formData are required",
+      });
+    }
+    const patient = await Patient.findById(patientId);
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    const newBill = await billModel.create({
+      patientId,
+      ...formData,
+    });
+
+    const updatedPatient = await Patient.findByIdAndUpdate(
+      patientId,
+      {
+        $push: {
+          billing: newBill._id,
+        },
+      },
+      { new: true }
+    );
     res.status(201).json({
       success: true,
       message: "Bill created successfully",
-      data: savedBill,
+      bill: newBill,
+      patient: updatedPatient,
     });
   } catch (err) {
     console.log(err);
@@ -26,7 +56,7 @@ const createBill = async (req, res) => {
 
 const getBill = async (req, res) => {
   try {
-    const bills = await billModel.find();
+    const bills = await billModel.find().sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       message: "Bills retrieved successfully",
@@ -65,7 +95,7 @@ const createExpenses = async (req, res) => {
 
 const getExpenses = async (req, res) => {
   try {
-    const expenses = await expensesModel.find();
+    const expenses = await expensesModel.find().sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       message: "Expenses retrieved successfully",
@@ -104,7 +134,7 @@ const createInventory = async (req, res) => {
 
 const getInventory = async (req, res) => {
   try {
-    const inventory = await inventoryModel.find();
+    const inventory = await inventoryModel.find().sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       message: "Inventory retrieved successfully",
@@ -143,7 +173,7 @@ const createRent = async (req, res) => {
 
 const getRent = async (req, res) => {
   try {
-    const rents = await rentModel.find();
+    const rents = await rentModel.find().sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       message: "Rents retrieved successfully",
@@ -182,7 +212,7 @@ const createSalary = async (req, res) => {
 
 const getSalary = async (req, res) => {
   try {
-    const salaries = await salaryModel.find();
+    const salaries = await salaryModel.find().sort({ createdAt: -1 });
     res.status(200).json({
       success: true,
       message: "Salaries retrieved successfully",

@@ -7,7 +7,7 @@ import { Link } from "react-router-dom";
 const categories = [
   { name: "Bill", path: "/Bill" },
   { name: "Expenses", path: "/Expenses" },
-  { name: "Inventory", path: "/Investory" }, // Note: spelling matches your route
+  { name: "Inventory", path: "/Inventory" }, // Note: spelling matches your route
   { name: "Rent", path: "/Rent" },
   { name: "Salary", path: "/Salary" },
 ];

@@ -1,12 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import AssessmentDetailsModal from "./showAssesmentDetails/AssessmentDetailsModal";
 
 const NeuroPhysioFullForm = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const patient = location?.state?.patient;
+  const patientDetail = location?.state?.patient?.personalDetails;
+  const patient_id = location?.state?.patient?._id;
+  console.log("patient inside the neuro", patient);
+  // console.log("patient details inside the neuro", patientDetail);
+  // console.log("patient  inside the neuro", patient_id);
+
   const { id } = useParams(); // If present => update mode
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     patientName: "",
     age: "",
-    sex: "",
+    gender: "",
     occupation: "",
     address: "",
     contactNumber: "",
@@ -68,6 +80,33 @@ const NeuroPhysioFullForm = () => {
     datePatient: "",
   });
 
+  const [activeRecords, setActiveRecords] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [openModal, setOpenModal] = useState(false);
+  const activeTab = "Neurological";
+
+  const formatDateTime = (date) => {
+    if (!date) return "";
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const pickAllowedFields = (source, allowedKeys) => {
+    const result = {};
+    allowedKeys.forEach((key) => {
+      if (source[key] !== undefined) {
+        result[key] = source[key];
+      }
+    });
+    return result;
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -79,75 +118,52 @@ const NeuroPhysioFullForm = () => {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    const fetchPersonalDetails = async () => {
-      try {
-        if (id) {
-          const dataResponse = await fetch(
-            `${
-              import.meta.env.VITE_BACKEND_URL
-            }/api/assessment/getneurological/${id}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                token: localStorage.getItem("token"),
-              },
-            }
-          );
-          const dataResult = await dataResponse.json();
-          console.log("data", dataResult);
-          if (dataResult.success && dataResult.form) {
-            setFormData((prev) => ({
-              ...prev,
-              ...dataResult.form, // This will spread all matching keys into formData
-            }));
-            setHistory(dataResult?.form?.history);
-          }
-        } else {
-          const response = await fetch(
-            `${
-              import.meta.env.VITE_BACKEND_URL
-            }/api/enquiry/getPersonalDetails`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                token: localStorage.getItem("token"),
-              },
-            }
-          );
-          const result = await response.json();
-          const data = result?.enquiryPersonalDetails?.[0];
-          console.log(data);
-          setFormData((prev) => ({
-            ...prev,
-            patientName: data?.patientName,
-            age: data?.age,
-            sex: data?.sex,
-            occupation: data?.occupation,
-            contactNumber: data?.contactNumber,
-            chiefComplaint: data?.chiefComplaint,
-          }));
-        }
-      } catch (error) {
-        console.error("Error fetching personal details:", error);
-      }
-    };
+    if (patientDetail) {
+      setFormData((prev) => ({
+        ...prev,
+        patientName: patientDetail.name,
+        age: patientDetail.age,
+        gender: patientDetail.gender,
+        occupation: patientDetail?.enquiryId?.occupation,
+        address: patientDetail?.address,
+        contactNumber: patientDetail?.contactNumber,
+        chiefComplaint: patientDetail?.chiefComplaint,
+      }));
+    }
+  }, [patientDetail]);
 
-    fetchPersonalDetails();
-  }, [id]);
+  useEffect(() => {
+    const forms = patient?.assessment?.neurologicalFormId;
+
+    if (forms?.length) {
+      const lastForm = forms[forms.length - 1];
+
+      const allowedKeys = Object.keys(formData);
+
+      const filteredData = pickAllowedFields(lastForm, allowedKeys);
+      console.log("filteredData", filteredData);
+      setFormData((prev) => ({
+        ...prev,
+        ...filteredData,
+      }));
+
+      setActiveRecords([...forms].reverse());
+    }
+  }, [patient]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    const payLoad = {
+      patientId: patient_id,
+      formData: formData,
+    };
+    setLoading(true);
     try {
-      const endpoint = id
-        ? `${
-            import.meta.env.VITE_BACKEND_URL
-          }/api/assessment/updateNeurological/${id}`
-        : `${import.meta.env.VITE_BACKEND_URL}/api/assessment/neurological`;
+      const endpoint = `${
+        import.meta.env.VITE_BACKEND_URL
+      }/api/assessment/neurological`;
 
-      const method = id ? "PUT" : "POST";
+      const method = "POST";
 
       const response = await fetch(endpoint, {
         method,
@@ -155,18 +171,18 @@ const NeuroPhysioFullForm = () => {
           "Content-Type": "application/json",
           token: localStorage.getItem("token"),
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payLoad),
       });
 
       const result = await response.json();
       console.log(result);
-      if (result.success) {
-        alert(result.message);
+      if (result?.success) {
+        alert(result?.message);
         setHistory(result?.updatedForm?.history);
         setFormData({
           patientName: "",
           age: "",
-          sex: "",
+          gender: "",
           occupation: "",
           address: "",
           contactNumber: "",
@@ -228,16 +244,21 @@ const NeuroPhysioFullForm = () => {
           datePhysiotherapist: "",
           datePatient: "",
         });
+        navigate(`/PatientDetails/${patient_id}`);
+      } else {
+        alert(result?.message);
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-      alert("Error submitting form");
+      console.log("error inside the nero", error);
+      alert("error");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div>
-      <div>
+      {/* <div>
         <h1 className="text-2xl font-bold mb-4">History</h1>
         {history?.length === 0 ? (
           <p>No history found</p>
@@ -258,7 +279,7 @@ const NeuroPhysioFullForm = () => {
                     <strong>Age:</strong> {item?.data?.age}
                   </p>
                   <p>
-                    <strong>Sex:</strong> {item?.data?.sex}
+                    <strong>Gender:</strong> {item?.data?.sex}
                   </p>
                   <p>
                     <strong>Occupation:</strong> {item?.data?.occupation}
@@ -467,6 +488,28 @@ const NeuroPhysioFullForm = () => {
             </div>
           ))
         )}
+      </div> */}
+      <div>
+        <h2>History</h2>
+        {activeRecords.length === 0 ? (
+          <p className="text-sm text-gray-500">No {activeTab} records</p>
+        ) : (
+          <ul className="text-sm list-disc ml-5 p-2">
+            {activeRecords?.map((item, index) => (
+              <li
+                key={item?._id}
+                onClick={() => {
+                  setSelectedRecord(item);
+                  setOpenModal(true);
+                }}
+                className="cursor-pointer "
+              >
+                {activeTab} Assessment #{index + 1} -{" "}
+                {formatDateTime(item?.createdAt)}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <form
         onSubmit={handleSubmit}
@@ -484,41 +527,42 @@ const NeuroPhysioFullForm = () => {
               name="patientName"
               value={formData.patientName}
               onChange={handleChange}
-              //readOnly={true}
+              readOnly={true}
             />
             <Input
               label="Age"
               name="age"
               value={formData.age}
               onChange={handleChange}
-              //readOnly={true}
+              readOnly={true}
             />
             <Input
-              label="Sex"
-              name="sex"
-              value={formData.sex}
+              label="Gender"
+              name="gender"
+              value={formData.gender}
               onChange={handleChange}
-              //readOnly={true}
+              readOnly={true}
             />
             <Input
               label="Occupation"
               name="occupation"
               value={formData.occupation}
               onChange={handleChange}
-              //readOnly={true}
+              readOnly={true}
             />
             <Input
               label="Address"
               name="address"
               value={formData.address}
               onChange={handleChange}
+              readOnly={true}
             />
             <Input
               label="Contact Number"
               name="contactNumber"
               value={formData.contactNumber}
               onChange={handleChange}
-              //readOnly={true}
+              readOnly={true}
             />
             <Input
               label="Referred By Doctor"
@@ -543,7 +587,7 @@ const NeuroPhysioFullForm = () => {
             name="chiefComplaint"
             value={formData.chiefComplaint}
             onChange={handleChange}
-            //readOnly={true}
+            readOnly={true}
           />
           <Textarea
             label="History of Present Illness"
@@ -982,7 +1026,7 @@ const NeuroPhysioFullForm = () => {
           <div className="space-x-4">
             <button
               type="submit"
-              disabled={id && history?.length >= 2}
+              disabled={(id && history?.length >= 2) || loading}
               className={`${
                 id
                   ? history?.length >= 2
@@ -991,7 +1035,13 @@ const NeuroPhysioFullForm = () => {
                   : "bg-blue-700 hover:bg-blue-800"
               } text-white px-8 py-3 rounded-lg transition`}
             >
-              {id ? "Update Evaluation" : "Submit Evaluation"}
+              {id
+                ? loading
+                  ? "Updating..."
+                  : "Update Evaluation"
+                : loading
+                ? "Submitting..."
+                : "Submit Evaluation"}
             </button>
 
             <button
@@ -1004,6 +1054,16 @@ const NeuroPhysioFullForm = () => {
           </div>
         </div>
       </form>
+      <AssessmentDetailsModal
+        open={openModal}
+        onClose={() => setOpenModal(false)}
+        data={selectedRecord}
+        title={`${activeTab} Assessment`}
+        assessmentType={activeTab}
+        onDownloadPdf={() => {
+          console.log("Download PDF for", activeTab, selectedRecord);
+        }}
+      />
     </div>
   );
 };

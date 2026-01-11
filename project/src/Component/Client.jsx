@@ -187,6 +187,8 @@ const Client = () => {
     fetchData();
   }, []);
 
+  console.log("musclo" , musculoskeletalClientData);
+
   const handleDownload = (data) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();

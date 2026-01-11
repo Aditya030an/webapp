@@ -5,7 +5,7 @@ const enquirySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  sex: {
+  gender: {
     type: String,
     enum: ["Male", "Female", "Other"],
     required: true,
@@ -23,7 +23,6 @@ const enquirySchema = new mongoose.Schema({
   contactNumber: {
     type: String,
     required: true,
-    unique: true,
     match: /^[0-9]{10}$/,
   },
   email: {
@@ -61,6 +60,15 @@ const enquirySchema = new mongoose.Schema({
   total: {
     type: Number,
     // required: true,
+  },
+  enquiryStatus: {
+    type: String,
+    enum: ["lead" , "patient"],
+    default: "lead",
+  },
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Patient",
   },
   musculoskeletalFormId: {
     type: mongoose.Schema.Types.ObjectId,

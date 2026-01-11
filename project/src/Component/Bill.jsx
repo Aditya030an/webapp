@@ -1,192 +1,9 @@
-// import { Link } from "react-router-dom";
-// import React, { useState } from "react";
-
-// const categories = [
-//   { name: "Bill", path: "/Bill" },
-//   { name: "Expenses", path: "/Expenses" },
-//   { name: "Inventory", path: "/Inventory" }, // Corrected spelling from Investory to Inventory
-//   { name: "Rent", path: "/Rent" },
-//   { name: "Salary", path: "/Salary" },
-// ];
-
-// const Bill = () => {
-//   const [billNumber, setBillNumber] = useState("");
-//   const [customer, setCustomer] = useState("");
-//   const [date, setDate] = useState("");
-//   const [status, setStatus] = useState("Unpaid");
-//   const [items, setItems] = useState([{ name: "", qty: 1, price: 0 }]);
-
-//   const handleItemChange = (index, field, value) => {
-//     const updatedItems = [...items];
-//     updatedItems[index][field] =
-//       field === "qty" || field === "price" ? Number(value) : value;
-//     setItems(updatedItems);
-//   };
-
-//   const addItem = () => {
-//     setItems([...items, { name: "", qty: 1, price: 0 }]);
-//   };
-
-//   const total = items.reduce((sum, item) => sum + item.qty * item.price, 0);
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-//       {/* Navbar */}
-//       <nav className="bg-white shadow-md px-6 py-4 mb-6 rounded-lg">
-//         <h1 className="text-xl font-bold text-gray-800">Report Dashboard</h1>
-//       </nav>
-
-//       {/* Category Links */}
-//       <div className="bg-white shadow-sm px-6 py-3 rounded-lg mb-6 flex space-x-4 overflow-x-auto">
-//         {categories.map((cat) => (
-//           <Link
-//             key={cat.name}
-//             to={cat.path}
-//             className="px-4 py-2 rounded-full font-medium bg-gray-200 text-gray-700 hover:bg-blue-100"
-//           >
-//             {cat.name}
-//           </Link>
-//         ))}
-//       </div>
-
-//       {/* Main Content */}
-//       <div className="pt-32 px-6 pb-10">
-//         <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-md">
-//           {/* Header */}
-//           <div className="flex justify-between items-center mb-6">
-//             <h2 className="text-2xl font-bold text-gray-800">Create Bill</h2>
-//             <select
-//               className="px-4 py-1 rounded-full text-sm bg-gray-100 border border-gray-300"
-//               value={status}
-//               onChange={(e) => setStatus(e.target.value)}
-//             >
-//               <option value="Paid">Paid</option>
-//               <option value="Unpaid">Unpaid</option>
-//             </select>
-//           </div>
-
-//           {/* Bill Info Inputs */}
-//           <div className="grid grid-cols-2 gap-4 mb-6">
-//             <div>
-//               <label className="text-gray-500 block">Bill Number</label>
-//               <input
-//                 type="text"
-//                 value={billNumber}
-//                 onChange={(e) => setBillNumber(e.target.value)}
-//                 className="w-full border border-gray-300 p-2 rounded"
-//                 placeholder="e.g. INV-2025-001"
-//               />
-//             </div>
-//             <div>
-//               <label className="text-gray-500 block">Date</label>
-//               <input
-//                 type="date"
-//                 value={date}
-//                 onChange={(e) => setDate(e.target.value)}
-//                 className="w-full border border-gray-300 p-2 rounded"
-//               />
-//             </div>
-//             <div>
-//               <label className="text-gray-500 block">Customer</label>
-//               <input
-//                 type="text"
-//                 value={customer}
-//                 onChange={(e) => setCustomer(e.target.value)}
-//                 className="w-full border border-gray-300 p-2 rounded"
-//                 placeholder="e.g. John Doe"
-//               />
-//             </div>
-//           </div>
-
-//           {/* Items Table */}
-//           <table className="w-full text-left mb-6">
-//             <thead>
-//               <tr className="bg-gray-200">
-//                 <th className="p-2">Item</th>
-//                 <th className="p-2">Quantity</th>
-//                 <th className="p-2">Price</th>
-//                 <th className="p-2">Total</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {items.map((item, idx) => (
-//                 <tr key={idx} className="border-b">
-//                   <td className="p-2">
-//                     <input
-//                       type="text"
-//                       value={item.name}
-//                       onChange={(e) =>
-//                         handleItemChange(idx, "name", e.target.value)
-//                       }
-//                       className="w-full border border-gray-300 p-1 rounded"
-//                       placeholder="Service name"
-//                     />
-//                   </td>
-//                   <td className="p-2">
-//                     <input
-//                       type="number"
-//                       min="1"
-//                       value={item.qty}
-//                       onChange={(e) =>
-//                         handleItemChange(idx, "qty", e.target.value)
-//                       }
-//                       className="w-full border border-gray-300 p-1 rounded"
-//                     />
-//                   </td>
-//                   <td className="p-2">
-//                     <input
-//                       type="number"
-//                       min="0"
-//                       value={item.price}
-//                       onChange={(e) =>
-//                         handleItemChange(idx, "price", e.target.value)
-//                       }
-//                       className="w-full border border-gray-300 p-1 rounded"
-//                     />
-//                   </td>
-//                   <td className="p-2 text-gray-800">
-//                     ${item.qty * item.price}
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </table>
-
-//           {/* Add Item Button */}
-//           <button
-//             onClick={addItem}
-//             className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
-//           >
-//             + Add Item
-//           </button>
-
-//           {/* Total */}
-//           <div className="text-right text-xl font-bold mt-4">
-//             Total: ${total.toFixed(2)}
-//           </div>
-
-//           {/* Action Buttons */}
-//           <div className="flex justify-end space-x-4 mt-6">
-//             <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">
-//               Save
-//             </button>
-//             <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-//               Print
-//             </button>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Bill;
-
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState, useRef } from "react";
 import { CSVLink } from "react-csv";
 import html2pdf from "html2pdf.js";
 import jsPDF from "jspdf";
+import BillReview from "./BillReview";
 const categories = [
   { name: "Bill", path: "/Bill" },
   { name: "Expenses", path: "/Expenses" },
@@ -197,12 +14,19 @@ const categories = [
 ];
 
 const Bill = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const patientDetail = location?.state?.patient?.personalDetails;
+  const patient_id = location?.state?.patient?._id;
+  const attendance = location?.state?.patient?.attendance;
+
   const [billNumber, setBillNumber] = useState("");
   const [customer, setCustomer] = useState("");
   const [date, setDate] = useState("");
   const [billType, setBillType] = useState("Home");
   const [status, setStatus] = useState("Cash");
   const [items, setItems] = useState([{ name: "", qty: 1, price: 0 }]);
+  const [advancePayment, setAdvancePayment] = useState(0);
   const [filterStatus, setFilterStatus] = useState("All");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("All");
 
@@ -210,8 +34,29 @@ const Bill = () => {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
+  const [review, setReview] = useState(false);
+  const [reviewBill, setReviewBill] = useState(null);
+
   // Ref for the bill content to be printed
   const billContentRef = useRef();
+
+  useEffect(() => {
+    if (patientDetail && attendance) {
+      const presentCount = attendance.filter(
+        (item) => item?.status === "Present"
+      ).length;
+
+      setCustomer(patientDetail?.name);
+
+      setItems([
+        {
+          name: "",
+          qty: presentCount, // ✅ number of present days
+          price: 0,
+        },
+      ]);
+    }
+  }, [patientDetail, attendance]);
 
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...items];
@@ -247,12 +92,12 @@ const Bill = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/report/bill`
       );
       const result = await response.json();
-      console.log("Bill data:", result);
+      // console.log("Bill data:", result);
       if (result.success && result.data.length > 0) {
         setBillData(result.data);
 
         // Get last bill number and increment
-        const lastBill = result.data[result.data.length - 1];
+        const lastBill = result.data[0];
         const lastBillNumber = lastBill.billNumber;
         const match = lastBillNumber.match(/(\D+)-(\d+)-(\d+)/);
         if (match) {
@@ -280,7 +125,7 @@ const Bill = () => {
   }, []);
 
   const handleSubmit = async () => {
-    const billDataToSave = {
+    const formData = {
       billNumber,
       billType,
       customer,
@@ -288,9 +133,15 @@ const Bill = () => {
       status,
       items,
       total,
+      advancePayment,
     };
 
-    console.log("inside handleSubmit", billDataToSave);
+    const payLoad = {
+      patientId: patient_id,
+      formData,
+    };
+
+    console.log("inside handleSubmit", formData);
 
     try {
       const response = await fetch(
@@ -300,19 +151,23 @@ const Bill = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(billDataToSave),
+          body: JSON.stringify(payLoad),
         }
       );
 
       const result = await response.json();
       console.log("Bill saved:", result);
-      alert(result.message);
-      fetchBillData(); // Refresh after saving
-      setCustomer("");
-      setDate("");
-      setStatus("Cash");
-      setBillType("Home");
-      setItems([{ name: "", qty: 1, price: 0 }]);
+      if (result?.success) {
+        alert(result.message);
+        fetchBillData(); // Refresh after saving
+        setCustomer("");
+        setDate("");
+        setStatus("Cash");
+        setBillType("Home");
+        setItems([{ name: "", qty: 1, price: 0 }]);
+        setAdvancePayment(0);
+        navigate(`/PatientDetails/${patient_id}`);
+      }
     } catch (error) {
       console.error("Error submitting bill:", error);
       alert("Failed to submit bill");
@@ -364,7 +219,6 @@ const Bill = () => {
     (a, b) => new Date(a) - new Date(b)
   );
 
-  
   const generatePDF = () => {
     const selectedFilteredBills = filteredBills.filter((bill) => {
       const date = new Date(bill.date);
@@ -373,23 +227,23 @@ const Bill = () => {
         date.getFullYear() === Number(selectedYear)
       );
     });
-    
-    console.log("selectedFilteredBills", selectedFilteredBills)
-  const totalMonthly = selectedFilteredBills
-    .reduce((sum, bill) => sum + bill.total, 0)
-    .toFixed(2);
 
-  const totalYearly = Object.entries(monthlyExpenses)
-    .reduce((sum, [key, value]) => {
-      const [month, year] = key.split(" ");
-      if (Number(year) === Number(selectedYear)) {
-        return sum + value;
-      }
-      return sum;
-    }, 0)
-    .toFixed(2);
+    console.log("selectedFilteredBills", selectedFilteredBills);
+    const totalMonthly = selectedFilteredBills
+      .reduce((sum, bill) => sum + bill.total, 0)
+      .toFixed(2);
 
-  const content = `
+    const totalYearly = Object.entries(monthlyExpenses)
+      .reduce((sum, [key, value]) => {
+        const [month, year] = key.split(" ");
+        if (Number(year) === Number(selectedYear)) {
+          return sum + value;
+        }
+        return sum;
+      }, 0)
+      .toFixed(2);
+
+    const content = `
   <div style="font-family: Arial, sans-serif;">
     <h2 style="text-align:center;">Monthly Expense Report</h2>
     
@@ -425,11 +279,33 @@ const Bill = () => {
               .map(
                 (item, idx) => `
             <tr>
-              ${idx === 0 ? `<td rowspan="${bill.items.length}">${bill.billNumber}</td>` : ""}
-              ${idx === 0 ? `<td rowspan="${bill.items.length}">${new Date(bill.date).toLocaleDateString()}</td>` : ""}
-              ${idx === 0 ? `<td rowspan="${bill.items.length}">${bill.customer}</td>` : ""}
-              ${idx === 0 ? `<td rowspan="${bill.items.length}">${bill.status}</td>` : ""}
-              ${idx === 0 ? `<td rowspan="${bill.items.length}">${bill.billType} Service</td>` : ""}
+              ${
+                idx === 0
+                  ? `<td rowspan="${bill.items.length}">${bill.billNumber}</td>`
+                  : ""
+              }
+              ${
+                idx === 0
+                  ? `<td rowspan="${bill.items.length}">${new Date(
+                      bill.date
+                    ).toLocaleDateString()}</td>`
+                  : ""
+              }
+              ${
+                idx === 0
+                  ? `<td rowspan="${bill.items.length}">${bill.customer}</td>`
+                  : ""
+              }
+              ${
+                idx === 0
+                  ? `<td rowspan="${bill.items.length}">${bill.status}</td>`
+                  : ""
+              }
+              ${
+                idx === 0
+                  ? `<td rowspan="${bill.items.length}">${bill.billType} Service</td>`
+                  : ""
+              }
               <td>${item.name}</td>
               <td>${item.qty}</td>
               <td>₹${item.price}</td>
@@ -449,16 +325,16 @@ const Bill = () => {
   </div>
   `;
 
-  const opt = {
-    margin: 0.5,
-    filename: `Expense_Report_${selectedMonth}_${selectedYear}.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-  };
+    const opt = {
+      margin: 0.5,
+      filename: `Expense_Report_${selectedMonth}_${selectedYear}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2 },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+    };
 
-  html2pdf().set(opt).from(content).save();
-};
+    html2pdf().set(opt).from(content).save();
+  };
 
   // Check if there are any monthly expenses to display
   const hasMonthlyExpenses = Object.keys(monthlyExpenses).length > 0;
@@ -549,6 +425,7 @@ const Bill = () => {
                 <input
                   type="text"
                   value={customer}
+                  readOnly={patientDetail !== undefined}
                   onChange={(e) => setCustomer(e.target.value)}
                   className="w-full border border-gray-300 p-2 rounded"
                   placeholder="e.g. John Doe"
@@ -560,8 +437,8 @@ const Bill = () => {
             <table className="w-full text-left mb-6">
               <thead>
                 <tr className="bg-gray-200">
-                  <th className="p-2">Item</th>
-                  <th className="p-2">Quantity</th>
+                  <th className="p-2">Service Name</th>
+                  <th className="p-2">Number of Session</th>
                   <th className="p-2">Price</th>
                   <th className="p-2">Total</th>
                 </tr>
@@ -584,6 +461,7 @@ const Bill = () => {
                       <input
                         type="number"
                         min="1"
+                        readOnly={patientDetail !== undefined}
                         value={item.qty}
                         onChange={(e) =>
                           handleItemChange(idx, "qty", e.target.value)
@@ -603,7 +481,11 @@ const Bill = () => {
                       />
                     </td>
                     <td className="p-2 text-gray-800">
-                      ₹{(item.qty * item.price).toFixed(2)}
+                      ₹
+                      {(item.qty * item.price).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </td>
                   </tr>
                 ))}
@@ -619,99 +501,188 @@ const Bill = () => {
             </button>
 
             {/* Total */}
-            <div className="text-right text-xl font-bold mt-4">
-              Total: ₹{total.toFixed(2)}
+            <div className="space-y-4">
+              {/* Total Amount */}
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span>Total Amount</span>
+                <span className="text-lg font-semibold text-gray-900">
+                  ₹
+                  {total.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+
+              {/* Advance Payment */}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-600">
+                  Advance Paid
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max={total}
+                  value={advancePayment}
+                  onChange={(e) => {
+                    if (e.target.value > total) return;
+                    Number(setAdvancePayment(e.target.value));
+                  }}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
+                  placeholder="Enter advance amount"
+                />
+              </div>
+
+              {/* Remaining Balance */}
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="text-base font-medium text-gray-700">
+                  Remaining Balance
+                </span>
+                <span className="text-xl font-bold text-black">
+                  ₹
+                  {(total - advancePayment).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end space-x-4 mt-6 max-w-3xl mx-auto">
-            <button
-              onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-            >
-              Save
-            </button>
-            <button className="bg-purple-500 text-white px-4 py-2 rounded-lg">
-              Download PDF
-            </button>
-            <CSVLink
-              data={csvData}
-              filename={"bill.csv"}
-              className="bg-green-500 text-white px-4 py-2 rounded-lg"
-            >
-              Download CSV
-            </CSVLink>
-          </div>
+          {!review && (
+            <div className="flex justify-end mt-6 max-w-3xl mx-auto">
+              <button
+                onClick={() => {
+                  setReviewBill({
+                    billNumber,
+                    billType,
+                    customer,
+                    date,
+                    status,
+                    items,
+                    total,
+                    advancePayment,
+                  });
+                }}
+                className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
+              >
+                Review
+              </button>
+            </div>
+          )}
+          {review && (
+            <div className="max-w-3xl mx-auto flex justify-end space-x-4 mt-6">
+              <button
+                onClick={handleSubmit}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+              >
+                Save
+              </button>
+
+              <button className="bg-purple-500 text-white px-4 py-2 rounded-lg">
+                Download PDF
+              </button>
+
+              <CSVLink
+                data={csvData}
+                filename="bill.csv"
+                className="bg-green-500 text-white px-4 py-2 rounded-lg"
+              >
+                Download CSV
+              </CSVLink>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="w-full flex items-start justify-around mt-3 flex-wrap">
         {/* Filter Buttons */}
         <div className="flex flex-col mb-6">
-          <div className="flex justify-center px-4 mb-4 space-x-2 flex-wrap">
-            <button
-              onClick={() => setServiceTypeFilter("All")}
-              className={`px-4 py-2 rounded-md border ${
-                serviceTypeFilter === "All"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              } mb-2`}
-            >
-              All Services
-            </button>
-            <button
-              onClick={() => setServiceTypeFilter("Home")}
-              className={`px-4 py-2 rounded-md border ${
-                serviceTypeFilter === "Home"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              } mb-2`}
-            >
-              Home Service
-            </button>
-            <button
-              onClick={() => setServiceTypeFilter("Client")}
-              className={`px-4 py-2 rounded-md border ${
-                serviceTypeFilter === "Client"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              } mb-2`}
-            >
-              Client Service
-            </button>
-          </div>
-          <div className="flex justify-center px-4 mb-4 space-x-2 flex-wrap">
-            <button
-              onClick={() => handleFilter("All")}
-              className={`px-4 py-2 rounded-md border ${
-                filterStatus === "All"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              } mb-2`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => handleFilter("Cash")}
-              className={`px-4 py-2 rounded-md border ${
-                filterStatus === "Cash"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              } mb-2`}
-            >
-              Cash
-            </button>
-            <button
-              onClick={() => handleFilter("Online")}
-              className={`px-4 py-2 rounded-md border ${
-                filterStatus === "Online"
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-gray-700"
-              } mb-2`}
-            >
-              Online
-            </button>
+          <div className="space-y-6">
+            {/* Service Type Filter */}
+            <div className="flex flex-col items-center">
+              <h3 className="mb-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Service Type Filter
+              </h3>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  onClick={() => setServiceTypeFilter("All")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    serviceTypeFilter === "All"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  All Services
+                </button>
+
+                <button
+                  onClick={() => setServiceTypeFilter("Home")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    serviceTypeFilter === "Home"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Home Service
+                </button>
+
+                <button
+                  onClick={() => setServiceTypeFilter("Client")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    serviceTypeFilter === "Client"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Client Service
+                </button>
+              </div>
+            </div>
+
+            {/* Payment Type Filter */}
+            <div className="flex flex-col items-center">
+              <h3 className="mb-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Payment Type Filter
+              </h3>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  onClick={() => handleFilter("All")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    filterStatus === "All"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  All
+                </button>
+
+                <button
+                  onClick={() => handleFilter("Cash")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    filterStatus === "Cash"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Cash
+                </button>
+
+                <button
+                  onClick={() => handleFilter("Online")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    filterStatus === "Online"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Online
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Show total expense for filtered bills */}
@@ -723,7 +694,11 @@ const Bill = () => {
             {filterStatus === "All"
               ? "All Payments"
               : `${filterStatus} Payments`}
-            : ₹{totalExpense.toFixed(2)}
+            : ₹
+            {totalExpense.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </div>
         </div>
 
@@ -775,58 +750,60 @@ const Bill = () => {
             <h3 className="text-xl font-semibold mb-2">Monthly Expenses:</h3>
 
             <div className="flex items-center gap-8 ">
-
-            
-
-            {selectedMonth && selectedYear ? (
-              <p className="text-gray-800">
-                Selected:{" "}
-                <span className="font-semibold">
-                  {new Date(selectedYear, selectedMonth - 1).toLocaleString(
-                    "default",
-                    {
-                      month: "short",
-                      year: "numeric",
-                    }
-                  )}
-                </span>{" "}
-                - ₹
-                {Object.entries(monthlyExpenses)
-                  .reduce((sum, [key, value]) => {
-                    const [monthName, yearVal] = key.split(" ");
-                    const date = new Date(`${monthName} 1, ${yearVal}`);
-                    const monthIndex = date.getMonth() + 1;
-                    if (
-                      monthIndex === Number(selectedMonth) &&
-                      Number(yearVal) === Number(selectedYear)
-                    ) {
-                      return sum + value;
-                    }
-                    return sum;
-                  }, 0)
-                  .toFixed(2)}
-              </p>
-            ) : (
-              <ul className="list-disc list-inside space-y-1">
-                {sortedMonths.map((month) => (
-                  <li key={month} className="text-gray-700">
-                    <span className="font-medium">{month}:</span> ₹
-                    {monthlyExpenses[month].toFixed(2)}
-                  </li>
-                ))}
-              </ul>
-            )}
-          {selectedMonth && selectedYear && (
-            <button
-              onClick={generatePDF}
-              className=" px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-            >
-              Download Monthly Report PDF
-            </button>
-          )}
+              {selectedMonth && selectedYear ? (
+                <p className="text-gray-800">
+                  Selected:{" "}
+                  <span className="font-semibold">
+                    {new Date(selectedYear, selectedMonth - 1).toLocaleString(
+                      "default",
+                      {
+                        month: "short",
+                        year: "numeric",
+                      }
+                    )}
+                  </span>{" "}
+                  - ₹
+                  {Object.entries(monthlyExpenses)
+                    .reduce((sum, [key, value]) => {
+                      const [monthName, yearVal] = key.split(" ");
+                      const date = new Date(`${monthName} 1, ${yearVal}`);
+                      const monthIndex = date.getMonth() + 1;
+                      if (
+                        monthIndex === Number(selectedMonth) &&
+                        Number(yearVal) === Number(selectedYear)
+                      ) {
+                        return sum + value;
+                      }
+                      return sum;
+                    }, 0)
+                    .toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                </p>
+              ) : (
+                <ul className="list-disc list-inside space-y-1">
+                  {sortedMonths.map((month) => (
+                    <li key={month} className="text-gray-700">
+                      <span className="font-medium">{month}:</span> ₹
+                      {monthlyExpenses[month].toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {selectedMonth && selectedYear && (
+                <button
+                  onClick={generatePDF}
+                  className=" px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  Download Monthly Report PDF
+                </button>
+              )}
+            </div>
           </div>
-          </div>
-
         </div>
       </div>
 
@@ -855,7 +832,7 @@ const Bill = () => {
                   Customer: {bill?.customer}
                 </p>
                 <p className="text-sm text-gray-600">
-                  Date: {new Date(bill?.date).toLocaleDateString()}
+                  Date: {new Date(bill?.date).toLocaleDateString("en-GB")}
                 </p>
                 <p
                   className={`text-md font-medium ${
@@ -871,19 +848,78 @@ const Bill = () => {
                 <ul className="list-disc pl-5">
                   {bill.items.map((item) => (
                     <li key={item?._id} className="text-sm text-gray-700">
-                      {item?.name} - Qty: {item?.qty} × ₹{item?.price}
+                      {item?.name} - Qty: {item?.qty?.toLocaleString()} × ₹
+                      {item?.price.toLocaleString()} = ₹
+                      {(item?.qty * item?.price).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                     </li>
                   ))}
                 </ul>
               </div>
 
-              <div className="text-right font-bold text-green-700">
+              {/* <div className="text-right font-bold text-green-700">
                 Total: ₹{bill?.total.toFixed(2)}
+              </div> */}
+              <div className="">
+                {/* Total Amount */}
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span>Total Amount</span>
+                  <span className="text-lg font-semibold text-gray-900">
+                    ₹
+                    {bill?.total.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span> Advance Paid</span>
+                  <span className="text-lg font-semibold text-gray-900">
+                    <span className="text-red-600 font-semibold text-xl">
+                      -{" "}
+                    </span>{" "}
+                    ₹
+                    {bill?.advancePayment.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }) || 0}
+                  </span>
+                </div>
+
+                {/* Remaining Balance */}
+                <div className="flex items-center justify-between border-t pt-4 mt-4">
+                  <span className="text-base font-medium text-gray-700">
+                    Remaining Balance
+                  </span>
+                  <span className="text-right font-bold text-green-700">
+                    ₹
+                    {(bill?.total - (bill?.advancePayment ?? 0)).toLocaleString(
+                      "en-IN",
+                      {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }
+                    )}
+                  </span>
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {reviewBill && (
+        <BillReview
+          bill={reviewBill}
+          onClose={() => setReviewBill(null)}
+          onConfirm={() => {
+            setReview(true);
+            setReviewBill(null);
+          }}
+        />
+      )}
     </div>
   );
 };

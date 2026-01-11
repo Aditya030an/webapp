@@ -12,7 +12,7 @@ const createEnquiry = async (req, res) => {
   try {
     const {
       patientName,
-      sex,
+      gender,
       age,
       occupation,
       contactNumber,
@@ -39,7 +39,7 @@ const createEnquiry = async (req, res) => {
     // Create a new enquiry document
     const newEnquiry = new enquiryModel({
       patientName,
-      sex,
+      gender,
       age,
       occupation,
       contactNumber,
@@ -76,7 +76,7 @@ const createEnquiry = async (req, res) => {
 
 const getEnquiry = async (req, res)=>{
   try{
-    const enquiries = await enquiryModel.find();
+    const enquiries = await enquiryModel.find().populate("patientId");
     res.status(200).json({ enquiries });
   }catch(err){
     console.log(err);
@@ -94,4 +94,23 @@ const getPersonalDetails = async (req, res) => {
   }
 };
 
-export { createEnquiry, getEnquiry , getPersonalDetails };
+
+const updatedEnquiry = async (req, res) => {
+  try {
+    const enquiry = await enquiryModel.findById(req.params.id);
+    if (!enquiry) {
+      return res.status(404).json({ message: "Enquiry not found" });
+    }
+    const updatedEnquiry = await enquiryModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.status(200).json(updatedEnquiry);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export { createEnquiry, getEnquiry , getPersonalDetails , updatedEnquiry };

@@ -98,7 +98,7 @@ import html2pdf from "html2pdf.js";
 const categories = [
   { name: "Bill", path: "/Bill" },
   { name: "Expenses", path: "/Expenses" },
-  { name: "Inventory", path: "/Investory" },
+  { name: "Inventory", path: "/Inventory" },
   { name: "Rent", path: "/Rent" },
   { name: "Salary", path: "/Salary" },
   { name: "Total", path: "/Total" },

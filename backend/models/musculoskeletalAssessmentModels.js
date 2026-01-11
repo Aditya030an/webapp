@@ -4,7 +4,7 @@ const musculoskeletalSchema = new mongoose.Schema(
   {
     patientName: { type: String, required: true },
     age: { type: String },
-    sex: { type: String },
+    gender: { type: String },
     occupation: { type: String },
     address: { type: String },
     contactNumber: { type: String },
@@ -56,9 +56,14 @@ const musculoskeletalSchema = new mongoose.Schema(
     physiotherapistName: { type: String },
     signature: { type: String },
     date: { type: Date },
-    enquiryId: {
+    // enquiryId: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "enquiry",
+    //   required: true,
+    // },
+    patientId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "enquiry",
+      ref: "patient",
       required: true,
     },
     history: [
