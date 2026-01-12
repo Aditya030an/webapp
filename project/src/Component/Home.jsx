@@ -434,7 +434,7 @@ const EnquiryForm = () => {
                       ● Patient
                     </span>
                     <Link
-                      to={`/PatientDetails/${entry?.patientId}`}
+                      to={`/PatientDetails/${entry?.patientId?._id}`}
                       className="text-sm text-blue-600 hover:underline"
                     >
                       View Details
