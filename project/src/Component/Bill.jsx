@@ -370,12 +370,12 @@ const Bill = () => {
             Home Service
           </button>
           <button
-            onClick={() => setBillType("Client")}
+            onClick={() => setBillType("Clinic")}
             className={`${
-              billType === "Client" ? "bg-blue-500" : "bg-gray-500"
+              billType === "Clinic" ? "bg-blue-500" : "bg-gray-500"
             } text-white px-4 py-2 rounded-lg`}
           >
-            Client Service
+            Clinic Service
           </button>
         </div>
 
@@ -461,7 +461,7 @@ const Bill = () => {
                       <input
                         type="number"
                         min="1"
-                        readOnly={patientDetail !== undefined}
+                        // readOnly={patientDetail !== undefined}
                         value={item.qty}
                         onChange={(e) =>
                           handleItemChange(idx, "qty", e.target.value)
@@ -630,14 +630,14 @@ const Bill = () => {
                 </button>
 
                 <button
-                  onClick={() => setServiceTypeFilter("Client")}
+                  onClick={() => setServiceTypeFilter("Clinic")}
                   className={`px-4 py-2 rounded-md border text-sm transition ${
-                    serviceTypeFilter === "Client"
+                    serviceTypeFilter === "Clinic"
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
                 >
-                  Client Service
+                  Clinic Service
                 </button>
               </div>
             </div>
