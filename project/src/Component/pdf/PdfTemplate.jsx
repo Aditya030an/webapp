@@ -73,6 +73,7 @@ const styles = StyleSheet.create({
   },
 });
 
+
 const PdfTemplate = ({ children }) => {
   return (
     <Document>

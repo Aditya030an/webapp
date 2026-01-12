@@ -36,13 +36,19 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     backgroundColor: "#eee",
   },
+  // meta: {
+  //   fontSize: 11,
+  //   color: "#555",
+  //   position: "absolute",
+  //   top: 0, // ⬅️ just above footer
+  //   right: 0,
+  //   textAlign: "right",
+  // },
   meta: {
-    fontSize: 11,
+    fontSize: 10,
     color: "#555",
-    position: "absolute",
-    top: 0, // ⬅️ just above footer
-    right: 0,
     textAlign: "right",
+    marginBottom: 12,
   },
 });
 
@@ -63,12 +69,19 @@ const PdfAssessmentContent = ({ data, assessmentType }) => {
 
   return (
     <View>
-      <View style={styles.meta}>
-        <Text>
-          <Text style={{ fontWeight: "bold" }}>Created On: </Text>
-          {formatDate(data?.createdAt)}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          marginBottom: 8,
+        }}
+      >
+        <Text style={{ fontWeight: "bold" }}>{assessmentType} Report</Text>
+        <Text style={styles.meta}>
+          Created On: {formatDate(data?.createdAt)}
         </Text>
       </View>
+
       {fields.map((field) => {
         const value = data[field.key];
 

@@ -199,7 +199,7 @@ export const assessmentFieldConfig = {
     { label: "Physiotherapist Summary", key: "physiotherapistSummary" },
   ],
   "Treatment Plan": [
-    {label:"exercises"  , key:"exercises"},
-    {label:"progressionStrategy"  , key:"progressionStrategy"},
+    {label:"Exercises"  , key:"exercises"},
+    {label:"Progression Strategy"  , key:"progressionStrategy"},
   ],
 };
