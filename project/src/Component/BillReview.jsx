@@ -1,7 +1,19 @@
 import React from "react";
 
 const BillReview = ({ bill, onClose, onConfirm }) => {
-  if (!bill) return null;
+  if (
+    !bill?.billNumber ||
+    !bill?.billType ||
+    !bill?.customer ||
+    !bill?.date ||
+    !bill?.status ||
+    !bill?.items ||
+    !bill?.total ||
+    !bill?.advancePayment
+  ){
+    alert("Please fill in all the required fields.");
+    return null;
+  }
 
   console.log(bill);
 
@@ -57,10 +69,13 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
         <div className="space-y-3 border-t pt-3">
           <div className="flex justify-between text-sm">
             <span>Total Amount</span>
-            <span className="font-semibold">₹{bill.total.toLocaleString("en-IN", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})}</span>
+            <span className="font-semibold">
+              ₹
+              {bill.total.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           </div>
 
           <div className="flex justify-between text-sm">
@@ -68,18 +83,21 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
             <span className="font-semibold">
               <span className="text-red-500 font-bold text-xl"> - </span>₹
               {Number(bill?.advancePayment || 0).toLocaleString("en-IN", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})}
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
             </span>
           </div>
 
           <div className="flex justify-between text-base font-bold">
             <span>Remaining Balance</span>
-            <span>₹{remainingBalance.toLocaleString("en-IN", {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})}</span>
+            <span>
+              ₹
+              {remainingBalance.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </span>
           </div>
         </div>
 

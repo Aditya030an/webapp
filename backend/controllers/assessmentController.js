@@ -1,16 +1,16 @@
-import enquiryModel from "../models/enquiryModels.js";
 import Patient from "../models/patientModel.js";
-import jwt from "jsonwebtoken";
 import neurologicalFormModel from "../models/neurologicalAssessmentModels.js";
 import musculoskeletalFormModel from "../models/musculoskeletalAssessmentModels.js";
 import obesityFormModel from "../models/obesityAssessmentModels.js";
 import pilatesPhysioFormModel from "../models/pilatesAssessmentModels.js";
+import Employee from "../models/employeeModels.js";
 // Create token based on contactNumber
 
 // Route for creating an enquiry
 const createNeurologicalForm = async (req, res) => {
   try {
     const { patientId, formData } = req.body;
+    const loginEmployeeId = req.id;
     console.log("patient id", patientId);
     console.log("formData", formData);
 
@@ -20,6 +20,17 @@ const createNeurologicalForm = async (req, res) => {
         message: "patientId and formData are required",
       });
     }
+
+    const loginEmployee = await Employee.findById(loginEmployeeId);
+    if (!loginEmployee) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const isPatientExist =
+      loginEmployee?.patientLook?.patientId?.includes(patientId);
 
     const patient = await Patient.findById(patientId);
     if (!patient) {
@@ -41,16 +52,30 @@ const createNeurologicalForm = async (req, res) => {
       {
         $push: {
           "assessment.neurologicalFormId": newNeurologicalForm._id,
+          "physioAssigned": loginEmployeeId,
         },
       },
-      { new: true }
+      { new: true },
     );
+    let updatedEmployee;
+    if (!isPatientExist) {
+      updatedEmployee = await Employee.findByIdAndUpdate(
+        loginEmployeeId,
+        {
+          $push: {
+            "patientLook.patientId": patientId,
+          },
+        },
+        { new: true },
+      );
+    }
 
     return res.status(201).json({
       success: true,
       message: "Neurological form created successfully",
       neuro: newNeurologicalForm,
       patient: updatedPatient,
+      updatedEmployee,
     });
   } catch (err) {
     console.error("Neurological error:", err);
@@ -135,7 +160,7 @@ const updateNeurologicalForm = async (req, res) => {
 const createMusculoskeletalForm = async (req, res) => {
   try {
     const { patientId, formData } = req.body;
-
+    const loginEmployeeId = req.id;
     console.log("Musculoskeletal form", formData);
 
     if (!patientId || !formData) {
@@ -144,6 +169,18 @@ const createMusculoskeletalForm = async (req, res) => {
         message: "patientId and formData are required",
       });
     }
+
+    const loginEmployee = await Employee.findById(loginEmployeeId);
+
+    if (!loginEmployee) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const isPatientExist =
+      loginEmployee?.patientLook?.patientId?.includes(patientId);
 
     const patient = await Patient.findById(patientId);
     if (!patient) {
@@ -163,16 +200,29 @@ const createMusculoskeletalForm = async (req, res) => {
       {
         $push: {
           "assessment.musculoskeletalFormId": newMusculoskeletalForm._id,
+          "physioAssigned": loginEmployeeId,
         },
       },
-      { new: true }
+      { new: true },
     );
-
+    let updatedEmployee = loginEmployee;
+    if (!isPatientExist) {
+      updatedEmployee = await Employee.findByIdAndUpdate(
+        loginEmployeeId,
+        {
+          $push: {
+            "patientLook.patientId": patientId,
+          },
+        },
+        { new: true },
+      );
+    }
     return res.status(201).json({
       success: true,
       message: "Musculoskeletal form created successfully",
       musculo: newMusculoskeletalForm,
       patient: updatedPatient,
+      updatedEmployee,
     });
   } catch (err) {
     console.log("Musculoskeletal error", err);
@@ -257,6 +307,7 @@ const updateMusculoskeletalForm = async (req, res) => {
 const createObesityForm = async (req, res) => {
   try {
     const { patientId, formData } = req.body;
+    const loginEmployeeId = req.id;
 
     if (!patientId || !formData) {
       return res.status(400).json({
@@ -264,6 +315,18 @@ const createObesityForm = async (req, res) => {
         message: "patientId and formData are required",
       });
     }
+
+    const loginEmployee = await Employee.findById(loginEmployeeId);
+    if (!loginEmployee) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const isPatientExist =
+      loginEmployee?.patientLook?.patientId?.includes(patientId);
+
     const patient = await Patient.findById(patientId);
 
     if (!patient) {
@@ -283,15 +346,29 @@ const createObesityForm = async (req, res) => {
       {
         $push: {
           "assessment.obesityFormId": newObesityForm._id,
+          "physioAssigned": loginEmployeeId,
         },
       },
-      { new: true }
+      { new: true },
     );
+    let updatedEmployee = loginEmployee;
+    if (!isPatientExist) {
+      updatedEmployee = await Employee.findByIdAndUpdate(
+        loginEmployeeId,
+        {
+          $push: {
+            "patientLook.patientId": patientId,
+          },
+        },
+        { new: true },
+      );
+    }
     res.status(201).json({
       success: true,
       message: "Obesity form successfully submitted",
       obesity: newObesityForm,
       patient: updatedPatient,
+      updatedEmployee,
     });
   } catch (err) {
     console.error("Neurological error:", err);
@@ -374,13 +451,24 @@ const updateObesityForm = async (req, res) => {
 const createPilatesForm = async (req, res) => {
   try {
     const { patientId, formData } = req.body;
-
+     const loginEmployeeId = req.id;
     if (!patientId || !formData) {
       return res.status(400).json({
         success: false,
         message: "patientId and formData are required",
       });
     }
+
+    const loginEmployee = await Employee.findById(loginEmployeeId);
+    if (!loginEmployee) {
+      return res.status(401).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    const isPatientExist =
+      loginEmployee?.patientLook?.patientId?.includes(patientId);
 
     const patient = await Patient.findById(patientId);
     if (!patient) {
@@ -400,17 +488,30 @@ const createPilatesForm = async (req, res) => {
       {
         $push: {
           "assessment.pilatesPhysioFormId": newPilatesForm._id,
+          "physioAssigned": loginEmployeeId,
         },
       },
-      { new: true }
+      { new: true },
     );
-    // console.log("new form pilatesForm", newForm);
-    // console.log("enquiry id", newEnquiry);
+
+    let updatedEmployee = loginEmployee;
+    if (!isPatientExist) {
+      updatedEmployee = await Employee.findByIdAndUpdate(
+        loginEmployeeId,
+        {
+          $push: {
+            "patientLook.patientId": patientId,
+          },
+        },
+        { new: true },
+      );
+    }
     res.status(201).json({
       success: true,
       message: "Pilates form successfully submitted",
       pilates: newPilatesForm,
       patient: updatedPatient,
+      updatedEmployee, 
     });
   } catch (err) {
     console.error("Neurological error:", err);

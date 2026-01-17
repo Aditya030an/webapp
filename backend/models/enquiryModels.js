@@ -47,7 +47,7 @@ const enquirySchema = new mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: ["Paid", "Unpaid", "Partially Paid"],
-    required: true,
+    // required: true,
   },
   amountPerDay: {
     type: Number,

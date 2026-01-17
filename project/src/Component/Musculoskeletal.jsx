@@ -81,10 +81,9 @@ const Musculoskeletal = () => {
   };
 
   const toInputDate = (date) => {
-  if (!date) return "";
-  return new Date(date).toISOString().split("T")[0];
-};
-
+    if (!date) return "";
+    return new Date(date).toISOString().split("T")[0];
+  };
 
   const pickAllowedFields = (source, allowedKeys) => {
     const result = {};
@@ -105,6 +104,16 @@ const Musculoskeletal = () => {
   };
 
   const [history, setHistory] = useState([]);
+
+  useEffect(() => {
+    const employee = localStorage.getItem("loginEmployeeData");
+    const data = JSON.parse(employee);
+    console.log("data", data);
+    setFormData((prev) => ({
+      ...prev,
+      physiotherapistName: data?.personalDetails?.fullName,
+    }));
+  }, []);
 
   useEffect(() => {
     if (patientDetail) {
@@ -134,8 +143,8 @@ const Musculoskeletal = () => {
       setFormData((prev) => ({
         ...prev,
         ...filteredData,
-         dateOfEvaluation: toInputDate(filteredData.dateOfEvaluation),
-      date: toInputDate(filteredData.date),
+        dateOfEvaluation: toInputDate(filteredData.dateOfEvaluation),
+        date: toInputDate(filteredData.date),
       }));
 
       setActiveRecords([...forms].reverse());
@@ -572,6 +581,7 @@ const Musculoskeletal = () => {
               name="physiotherapistName"
               value={formData.physiotherapistName}
               onChange={handleChange}
+              readOnly={true}
             />
             <Input
               label="Signature"
@@ -624,8 +634,8 @@ const Musculoskeletal = () => {
                   ? "Updating..."
                   : "Update Evaluation"
                 : loading
-                ? "Submitting..."
-                : "Submit Evaluation"}
+                  ? "Submitting..."
+                  : "Submit Evaluation"}
             </button>
 
             <button

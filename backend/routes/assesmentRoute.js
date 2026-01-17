@@ -15,11 +15,12 @@ import {
     updateObesityForm,
     updatePilatesForm,
 } from "../controllers/assessmentController.js";
+import employeeAuth from "../middleware/employeeAuth.js";
 
 const assessmentRouter = express.Router();
 
 // assessmentRouter.post("/neurological", auth, createNeurologicalForm);
-assessmentRouter.post("/neurological", createNeurologicalForm);
+assessmentRouter.post("/neurological", employeeAuth, createNeurologicalForm);
 assessmentRouter.post("/musculoskeletal", createMusculoskeletalForm);
 assessmentRouter.post("/obesity", createObesityForm);
 assessmentRouter.post("/pilates", createPilatesForm);

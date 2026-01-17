@@ -1,19 +1,18 @@
 import { useState } from "react";
 import AuthModal from "../Component/AuthModal";
+import { useNavigate } from "react-router-dom";
 
-const AuthPage = () => {
-  const [type, setType] = useState("login");
-
+const AuthPage = ({setRole}) => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="w-full max-w-md">
         <AuthModal
-          type={type}
           onClose={() => {}}
           onAuthSuccess={() => {
-            window.location.href = "/";
+            navigate("/");
           }}
-          onSwitchType={(t) => setType(t)}
+          setRole={setRole}
         />
       </div>
     </div>

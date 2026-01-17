@@ -19,22 +19,25 @@ import Rent from "./Component/Rent";
 import Total from "./Component/Total";
 import Attendence from "./Component/Attendence";
 import PatientDetails from "./Component/PatientDetails.jsx";
+import EmployeeDetails from "./Component/EmployeeDetails.jsx";
+import { useState } from "react";
 
 function App() {
+  const [role , setRole] = useState("employee");
   return (
     <Router>
       <Navbar />
 
       <Routes>
         {/* PUBLIC */}
-        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth" element={<AuthPage setRole={setRole} />} />
 
         {/* PROTECTED */}
         <Route
           path="/"
           element={
             <ProtectedRoute>
-              <Home />
+              <Home role={role} />
             </ProtectedRoute>
           }
         />
@@ -55,6 +58,7 @@ function App() {
         <Route path="/attendence" element={<ProtectedRoute><Attendence /></ProtectedRoute>} />
 
         <Route path="/PatientDetails/:id" element={<ProtectedRoute><PatientDetails /></ProtectedRoute>} />
+        <Route path="/EmployeeDetails/:id" element={<ProtectedRoute><EmployeeDetails role={role} /></ProtectedRoute>} />
       </Routes>
     </Router>
   );

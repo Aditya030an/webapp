@@ -13,6 +13,7 @@ const NavigationTabs = () => {
 
   const logout = () => {
     localStorage.removeItem("webapptoken");
+    localStorage.removeItem("employeeData");
     navigate("/auth");
   };
 

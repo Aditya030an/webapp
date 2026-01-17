@@ -1,5 +1,6 @@
 import { Text, View, StyleSheet } from "@react-pdf/renderer";
 import PdfTemplate from "./PdfTemplate";
+import { useEffect } from "react";
 
 const styles = StyleSheet.create({
   section: {
@@ -50,21 +51,34 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
 
-//   signature: {
-//     marginTop: 40,
-//     alignItems: "flex-end",
-//   },
-//   signature: {
-//   position: "absolute",
-//   bottom:0, // just above footer
-//   right: 40,
-//   textAlign: "right",
-//   fontSize: 11,
-// },
-
+  //   signature: {
+  //     marginTop: 40,
+  //     alignItems: "flex-end",
+  //   },
+  //   signature: {
+  //   position: "absolute",
+  //   bottom:0, // just above footer
+  //   right: 40,
+  //   textAlign: "right",
+  //   fontSize: 11,
+  // },
 });
 
 const BillPdf = ({ bill, patient }) => {
+  useEffect(() => {
+    if (
+      !bill?.billNumber ||
+      !bill?.billType ||
+      !bill?.customer ||
+      !bill?.date ||
+      !bill?.status ||
+      !bill?.items ||
+      !bill?.total ||
+      !bill?.advancePayment
+    ) {
+      return;
+    }
+  }, [bill]);
   return (
     <PdfTemplate>
       {/* ===== Patient Details ===== */}
@@ -151,11 +165,11 @@ const BillPdf = ({ bill, patient }) => {
           <Text style={styles.label}>Total:</Text> Rs. {bill.total}
         </Text>
         <Text style={styles.row}>
-          <Text style={styles.label}>Advance Paid:</Text> Rs. 
+          <Text style={styles.label}>Advance Paid:</Text> Rs.
           {bill.advancePayment || 0}
         </Text>
         <Text style={styles.row}>
-          <Text style={styles.label}>Remaining:</Text> Rs. 
+          <Text style={styles.label}>Remaining:</Text> Rs.
           {bill.total - (bill.advancePayment ?? 0)}
         </Text>
       </View>

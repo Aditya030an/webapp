@@ -1,8 +1,12 @@
 import { useState } from "react";
 import fetchApi from "../api/fetchApi";
-import { AiOutlineClose, AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import {
+  AiOutlineClose,
+  AiOutlineEye,
+  AiOutlineEyeInvisible,
+} from "react-icons/ai";
 
-const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
+const AuthModal = ({ onClose, onAuthSuccess, setRole }) => {
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -10,7 +14,7 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-  const [loading , setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -18,26 +22,37 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+    setLoading(true);
     try {
-      const url =
-        type === "login"
-          ? "/api/user/loginUser"
-          : "/api/user/createUser";
-
+      const url = "/api/employee/loginEmployee";
       const data = await fetchApi(url, {
         method: "POST",
         body: JSON.stringify(form),
       });
 
+      console.log("data" , data);
+
       if (data?.token) {
-        localStorage.setItem("webapptoken", data.token);
+        localStorage.setItem("webapptoken", data?.token);
+        localStorage.setItem("loginEmployeeData" , JSON.stringify(data?.employee));
+      }
+      if (data?.employee) {
+        if (
+          data?.employee?.personalDetails?.email ===
+          import.meta.env.VITE_ADMIN_EMAIL
+        ) {
+          setRole("admin");
+        } else {
+          setRole("employee");
+        }
       }
 
       onAuthSuccess();
       onClose();
     } catch (error) {
       alert(error.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -53,21 +68,10 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
         </button>
 
         <h2 className="text-xl md:text-2xl font-bold mb-4 capitalize text-center">
-          {type === "login" ? "Login" : "Sign Up"}
+          Login
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          {type === "signup" && (
-            <input
-              type="text"
-              name="name"
-              placeholder="Name"
-              className="w-full border px-3 py-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={handleChange}
-              required
-            />
-          )}
-
           <input
             type="email"
             name="email"
@@ -101,12 +105,12 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
           </div>
 
           <button className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors">
-            {type === "login" ? "Login" : "Sign Up"}
+            {loading ? "Logging in..." : "Login"}
           </button>
         </form>
 
         {/* Switch Login / Signup */}
-        <p className="text-sm text-center mt-4">
+        {/* <p className="text-sm text-center mt-4">
           {type === "login" ? (
             <>
               Don’t have an account?{" "}
@@ -128,7 +132,7 @@ const AuthModal = ({ type, onClose, onAuthSuccess, onSwitchType }) => {
               </button>
             </>
           )}
-        </p>
+        </p> */}
       </div>
     </div>
   );

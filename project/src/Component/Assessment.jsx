@@ -5,7 +5,6 @@ import AssessmentDetailsModal from "./showAssesmentDetails/AssessmentDetailsModa
 const NeuroPhysioFullForm = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
   const patient = location?.state?.patient;
   const patientDetail = location?.state?.patient?.personalDetails;
   const patient_id = location?.state?.patient?._id;
@@ -84,6 +83,16 @@ const NeuroPhysioFullForm = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [openModal, setOpenModal] = useState(false);
   const activeTab = "Neurological";
+
+  useEffect(() => {
+    const employee = localStorage.getItem("loginEmployeeData");
+    const data = JSON.parse(employee);
+    console.log("data", data);
+    setFormData((prev) => ({
+      ...prev,
+      physiotherapistName: data?.personalDetails?.fullName,
+    }));
+  }, []);
 
   const formatDateTime = (date) => {
     if (!date) return "";
@@ -169,13 +178,13 @@ const NeuroPhysioFullForm = () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          token: localStorage.getItem("token"),
+          token: localStorage.getItem("webapptoken"),
         },
         body: JSON.stringify(payLoad),
       });
 
       const result = await response.json();
-      console.log(result);
+      console.log("result , , ,, ,", result);
       if (result?.success) {
         alert(result?.message);
         setHistory(result?.updatedForm?.history);
@@ -258,237 +267,6 @@ const NeuroPhysioFullForm = () => {
 
   return (
     <div>
-      {/* <div>
-        <h1 className="text-2xl font-bold mb-4">History</h1>
-        {history?.length === 0 ? (
-          <p>No history found</p>
-        ) : (
-          history.map((item, index) => (
-            <div key={index} className="bg-white shadow-md rounded-xl p-6 mb-6">
-              <p className="text-sm text-gray-600 mb-2">
-                <strong>{index + 1} </strong> <strong>Updated At:</strong>{" "}
-                {new Date(item?.updatedAt).toLocaleString("en-IN")}
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p>
-                    <strong>Patient Name:</strong> {item?.data?.patientName}
-                  </p>
-                  <p>
-                    <strong>Age:</strong> {item?.data?.age}
-                  </p>
-                  <p>
-                    <strong>Gender:</strong> {item?.data?.sex}
-                  </p>
-                  <p>
-                    <strong>Occupation:</strong> {item?.data?.occupation}
-                  </p>
-                  <p>
-                    <strong>Address:</strong> {item?.data?.address}
-                  </p>
-                  <p>
-                    <strong>Contact Number:</strong> {item?.data?.contactNumber}
-                  </p>
-                  <p>
-                    <strong>Referred By:</strong> {item?.data?.referredBy}
-                  </p>
-                  <p>
-                    <strong>Date Of Evaluation:</strong>{" "}
-                    {item?.data?.dateOfEvaluation}
-                  </p>
-                  <p>
-                    <strong>Chief Complaint:</strong>{" "}
-                    {item?.data?.chiefComplaint}
-                  </p>
-                  <p>
-                    <strong>History Of Present Illness:</strong>{" "}
-                    {item?.data?.historyOfPresentIllness}
-                  </p>
-                  <p>
-                    <strong>Duration Of Condition:</strong>{" "}
-                    {item?.data?.durationOfCondition}
-                  </p>
-                  <p>
-                    <strong>Onset:</strong> {item?.data?.onset}
-                  </p>
-                  <p>
-                    <strong>Aggravating Factors:</strong>{" "}
-                    {item?.data?.aggravatingFactors}
-                  </p>
-                  <p>
-                    <strong>Past Medical History:</strong>{" "}
-                    {item?.data?.pastMedicalHistory}
-                  </p>
-                  <p>
-                    <strong>Surgical History:</strong>{" "}
-                    {item?.data?.surgicalHistory}
-                  </p>
-                  <p>
-                    <strong>Family History:</strong> {item?.data?.familyHistory}
-                  </p>
-                  <p>
-                    <strong>Obstetric History:</strong>{" "}
-                    {item?.data?.obstetricHistory}
-                  </p>
-                  <p>
-                    <strong>Personal History:</strong>{" "}
-                    {item?.data?.personalHistory}
-                  </p>
-                  <p>
-                    <strong>MRI Reports:</strong> {item?.data?.mriReports}
-                  </p>
-                  <p>
-                    <strong>Posture:</strong> {item?.data?.posture}
-                  </p>
-                  <p>
-                    <strong>Gait:</strong> {item?.data?.gait}
-                  </p>
-                  <p>
-                    <strong>Build Nutrition:</strong>{" "}
-                    {item?.data?.buildNutrition}
-                  </p>
-                  <p>
-                    <strong>Deformities:</strong> {item?.data?.deformities}
-                  </p>
-                  <p>
-                    <strong>Scars:</strong> {item?.data?.scars}
-                  </p>
-                  <p>
-                    <strong>Tenderness:</strong> {item?.data?.tenderness}
-                  </p>
-                  <p>
-                    <strong>Pain Site:</strong> {item?.data?.painSite}
-                  </p>
-                  <p>
-                    <strong>Pain Type:</strong> {item?.data?.painType}
-                  </p>
-                  <p>
-                    <strong>VAS Score:</strong> {item?.data?.vasScore}
-                  </p>
-                  <p>
-                    <strong>MAS:</strong> {item?.data?.mas}
-                  </p>
-                  <p>
-                    <strong>Clonus:</strong> {item?.data?.clonus}
-                  </p>
-                  <p>
-                    <strong>MMT:</strong> {item?.data?.mmt}
-                  </p>
-                  <p>
-                    <strong>Superficial Reflexes:</strong>{" "}
-                    {item?.data?.superficialReflexes}
-                  </p>
-                  <p>
-                    <strong>Deep Reflexes:</strong> {item?.data?.deepReflexes}
-                  </p>
-                  <p>
-                    <strong>Pathological Reflexes:</strong>{" "}
-                    {item?.data?.pathologicalReflexes}
-                  </p>
-                  <p>
-                    <strong>Coordination:</strong> {item?.data?.coordination}
-                  </p>
-                  <p>
-                    <strong>Cranial Nerve Examination:</strong>{" "}
-                    {item?.data?.cranialNerveExamination}
-                  </p>
-                  <p>
-                    <strong>Superficial Sensations:</strong>{" "}
-                    {item?.data?.superficialSensations}
-                  </p>
-                  <p>
-                    <strong>Deep Sensations:</strong>{" "}
-                    {item?.data?.deepSensations}
-                  </p>
-                  <p>
-                    <strong>Cortical Sensations:</strong>{" "}
-                    {item?.data?.corticalSensations}
-                  </p>
-                  <p>
-                    <strong>Bed Mobility:</strong> {item?.data?.bedMobility}
-                  </p>
-                  <p>
-                    <strong>Gait Pattern:</strong> {item?.data?.gaitPattern}
-                  </p>
-                  <p>
-                    <strong>Balance:</strong> {item?.data?.balance}
-                  </p>
-                  <p>
-                    <strong>Assistive Devices:</strong>{" "}
-                    {item?.data?.assistiveDevices}
-                  </p>
-                  <p>
-                    <strong>ADLs:</strong> {item?.data?.adls}
-                  </p>
-                  <p>
-                    <strong>Orientation:</strong> {item?.data?.orientation}
-                  </p>
-                  <p>
-                    <strong>Memory:</strong> {item?.data?.memory}
-                  </p>
-                  <p>
-                    <strong>Speech:</strong> {item?.data?.speech}
-                  </p>
-                  <p>
-                    <strong>Perception:</strong> {item?.data?.perception}
-                  </p>
-                  <p>
-                    <strong>Mood:</strong> {item?.data?.mood}
-                  </p>
-                  <p>
-                    <strong>Family Support:</strong> {item?.data?.familySupport}
-                  </p>
-                  <p>
-                    <strong>FIM Scores:</strong> {item?.data?.fimScores}
-                  </p>
-                  <p>
-                    <strong>Outcome Measures:</strong>{" "}
-                    {item?.data?.outcomeMeasures}
-                  </p>
-                  <p>
-                    <strong>Problem List:</strong> {item?.data?.problemList}
-                  </p>
-                  <p>
-                    <strong>Short Term Goals:</strong>{" "}
-                    {item?.data?.shortTermGoals}
-                  </p>
-                  <p>
-                    <strong>Long Term Goals:</strong>{" "}
-                    {item?.data?.longTermGoals}
-                  </p>
-                  <p>
-                    <strong>Follow Up:</strong> {item?.data?.followUp}
-                  </p>
-                  <p>
-                    <strong>Patient Consent:</strong>{" "}
-                    {item?.data?.patientConsent}
-                  </p>
-                  <p>
-                    <strong>Patient Signature:</strong>{" "}
-                    {item?.data?.patientSignature}
-                  </p>
-                  <p>
-                    <strong>Physiotherapist Name:</strong>{" "}
-                    {item?.data?.physiotherapistName}
-                  </p>
-                  <p>
-                    <strong>Physiotherapist Signature:</strong>{" "}
-                    {item?.data?.physiotherapistSignature}
-                  </p>
-                  <p>
-                    <strong>Date Physiotherapist:</strong>{" "}
-                    {item?.data?.datePhysiotherapist}
-                  </p>
-                  <p>
-                    <strong>Date Patient:</strong> {item?.data?.datePatient}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div> */}
       <div>
         <h2>History</h2>
         {activeRecords.length === 0 ? (
@@ -721,7 +499,11 @@ const NeuroPhysioFullForm = () => {
               onChange={handleChange}
             />
           </Grid>
-          <label className="block font-medium mt-2 mb-1">VAS Score</label>
+
+          <label className="block font-medium mt-2 mb-1">
+            VAS Score <span className="ml-2">{formData.vasScore}</span>
+          </label>
+
           <input
             type="range"
             min="0"
@@ -987,6 +769,7 @@ const NeuroPhysioFullForm = () => {
               name="physiotherapistName"
               value={formData.physiotherapistName}
               onChange={handleChange}
+              readOnly={true}
             />
             <Input
               label="Signature"
@@ -1040,8 +823,8 @@ const NeuroPhysioFullForm = () => {
                   ? "Updating..."
                   : "Update Evaluation"
                 : loading
-                ? "Submitting..."
-                : "Submit Evaluation"}
+                  ? "Submitting..."
+                  : "Submit Evaluation"}
             </button>
 
             <button

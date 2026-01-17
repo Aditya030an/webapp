@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ConvertToPatientForm from "./ConvertToPatientForm";
 import { Link } from "react-router-dom";
+import CreateEmployeeForm from "./CreateEmployeeForm";
 
 const EnquiryForm = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -13,6 +14,25 @@ const EnquiryForm = () => {
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // newest | oldest
+  const [loading, setLoading] = useState(false);
+  const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const [employeeData, setEmployeeData] = useState([]);
+  const [lastEmployeeNumber, setLastEmployeeNumber] = useState([]);
+  const [role , setRole] = useState('employee');
+
+  const tabsByRole = {
+  admin: ["all", "lead", "patient", "other", "employee"],
+  employee: ["all", "lead", "patient", "other"],
+};
+
+
+useEffect(()=>{
+  const employee = localStorage.getItem("loginEmployeeData");
+  const data = JSON.parse(employee);
+  if(data?.personalDetails?.email === import.meta.env.VITE_ADMIN_EMAIL){
+    setRole("admin");
+  }
+} , []);
 
   const [formData, setFormData] = useState({
     patientName: "",
@@ -24,10 +44,10 @@ const EnquiryForm = () => {
     chiefComplaint: "",
     response: "",
     source: "",
-    paymentStatus: "",
-    amountPerDay: "",
-    numberOfDays: "",
-    total: "",
+    // paymentStatus: "",
+    // amountPerDay: "",
+    // numberOfDays: "",
+    // total: "",
   });
 
   /* -------------------- FORM HANDLERS -------------------- */
@@ -67,6 +87,56 @@ const EnquiryForm = () => {
     fetchAllEnquiries();
   }, []);
 
+  const fetchEmployeeData = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/employee/getAllEmployee`
+      );
+
+      const result = await response.json();
+      console.log("Employee data:", result);
+
+      if (result.success && result.employees.length > 0) {
+        setEmployeeData(result.employees);
+
+        // ⚠️ Make sure employees are sorted (latest first)
+        const lastEmployee = result.employees[0];
+        console.log("last employee", lastEmployee);
+        const lastEmployeeNumber = lastEmployee?.personalDetails?.employeeId;
+
+        console.log("Last employee number:", lastEmployeeNumber);
+
+        // ✅ Correct regex
+        const match = lastEmployeeNumber?.match(/^(.+)-(\d+)$/);
+        console.log("match:", match);
+
+        if (match) {
+          const prefix = match[1]; // MR-EMP
+          const number = parseInt(match[2], 10) + 1;
+
+          const newEmployeeId = `${prefix}-${number
+            .toString()
+            .padStart(4, "0")}`;
+
+          setLastEmployeeNumber(newEmployeeId);
+        } else {
+          setLastEmployeeNumber("MR-EMP-0001");
+        }
+      } else {
+        setLastEmployeeNumber("MR-EMP-0001");
+      }
+    } catch (error) {
+      console.error("Error fetching employee data:", error);
+      setLastEmployeeNumber("MR-EMP-0001");
+    }
+  };
+
+  // console.log("last employee number", lastEmployeeNumber);
+
+  useEffect(() => {
+    fetchEmployeeData();
+  }, []);
+
   /* -------------------- VALIDATION -------------------- */
 
   const validateForm = () => {
@@ -79,7 +149,6 @@ const EnquiryForm = () => {
       chiefComplaint,
       response,
       source,
-      paymentStatus,
       email,
     } = formData;
 
@@ -91,8 +160,7 @@ const EnquiryForm = () => {
       !contactNumber ||
       !chiefComplaint ||
       !response ||
-      !source ||
-      !paymentStatus
+      !source
     ) {
       alert("Please fill all required fields");
       return false;
@@ -120,6 +188,7 @@ const EnquiryForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     if (!validateForm()) return;
 
     try {
@@ -143,14 +212,13 @@ const EnquiryForm = () => {
           chiefComplaint: "",
           response: "",
           source: "",
-          paymentStatus: "",
-          amountPerDay: "",
-          numberOfDays: "",
-          total: "",
         });
       }
     } catch (error) {
       console.error(error);
+      alert("Failed to create enquiry", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -164,6 +232,8 @@ const EnquiryForm = () => {
       filtered = filtered.filter((e) => e.enquiryStatus === "lead");
     } else if (activeStatus === "patient") {
       filtered = filtered.filter((e) => e.enquiryStatus === "patient");
+    } else if (activeStatus === "employee") {
+      filtered = employeeData;
     }
 
     /* ---- SEARCH (Name | Phone | PatientId) ---- */
@@ -171,6 +241,7 @@ const EnquiryForm = () => {
       const term = searchTerm.toLowerCase();
 
       filtered = filtered.filter((e) => {
+        // console.log("e", e);  
         const nameMatch = e.patientName?.toLowerCase().includes(term);
         const phoneMatch = e.contactNumber?.includes(term);
 
@@ -200,7 +271,7 @@ const EnquiryForm = () => {
         enquiryId: selectedEnquiry?._id, // 👈 IMPORTANT
       };
 
-      console.log("payload", payload);
+      // console.log("payload", payload);
 
       const response = await fetch(`${backendURL}/api/patient/createPatient`, {
         method: "POST",
@@ -222,8 +293,8 @@ const EnquiryForm = () => {
     }
   };
 
-  console.log("all enquiry", enquiries);
-  console.log("all lead", getFilteredEnquiries());
+  // console.log("all enquiry", enquiries);
+  // console.log("all lead", getFilteredEnquiries());
 
   /* -------------------- UI -------------------- */
 
@@ -296,7 +367,7 @@ const EnquiryForm = () => {
               value={formData.source}
               onChange={handleChange}
             />
-            <FormField
+            {/* <FormField
               label="Payment Status"
               name="paymentStatus"
               type="select"
@@ -323,21 +394,21 @@ const EnquiryForm = () => {
               name="total"
               value={formData.total}
               onChange={() => {}}
-            />
+            /> */}
           </div>
 
           <button
             onClick={handleSubmit}
             className="bg-green-600 text-white px-6 py-2 rounded"
           >
-            + Add Enquiry
+            {loading ? "Adding..." : " + Add Enquiry"}
           </button>
         </form>
       </div>
 
       {/* FILTERS */}
       <div className="flex flex-wrap gap-2 mt-10 mb-4">
-        {["all", "lead", "patient", "other"].map((s) => (
+        {tabsByRole[role]?.map((s) => (
           <button
             key={s}
             onClick={() => setActiveStatus(s)}
@@ -350,7 +421,7 @@ const EnquiryForm = () => {
         ))}
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
+      <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
         {/* SEARCH */}
         <input
           type="text"
@@ -369,6 +440,16 @@ const EnquiryForm = () => {
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
         </select>
+        {activeStatus === "employee" && (
+          <div className="flex justify-end ">
+            <button
+              onClick={() => setShowEmployeeForm(true)}
+              className="bg-green-600 text-white px-4 py-2 rounded"
+            >
+              + Create Employee
+            </button>
+          </div>
+        )}
       </div>
 
       {/* LIST */}
@@ -388,6 +469,7 @@ const EnquiryForm = () => {
               key={entry._id}
               className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition"
             >
+              {/* {console.log("entry" , entry)} */}
               {/* Header */}
               <div className="mb-2">
                 {entry.enquiryStatus === "patient" && (
@@ -399,49 +481,110 @@ const EnquiryForm = () => {
                   </p>
                 )}
 
+                {activeStatus === "employee" && (
+                  <p className="text-xs text-gray-500">
+                    Employee ID:{" "}
+                    <span className="font-medium">
+                      {entry?.personalDetails?.employeeId}
+                    </span>
+                  </p>
+                )}
+
                 <h3 className="font-semibold text-gray-800 text-base">
                   <span>Name- </span>
-                  {entry.patientName}
+                  {activeStatus === "employee" ? (
+                    <span className="text-sm text-gray-500">
+                      {entry?.personalDetails?.fullName}
+                    </span>
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      {entry?.patientName}
+                    </span>
+                  )}
                 </h3>
 
                 <p className="font-semibold text-gray-800 text-base">
                   <span className="text-sm text-gray-500">Contact number-</span>{" "}
-                  {entry.contactNumber}
+                  {activeStatus === "employee"
+                    ? entry?.personalDetails?.contactNumber
+                    : entry?.contactNumber}
                 </p>
               </div>
 
               {/* Complaint */}
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                <span className="font-medium text-gray-700">Complaint:</span>{" "}
-                {entry.chiefComplaint || "-"}
-              </p>
+              {activeStatus !== "employee" && (
+                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  <span className="font-medium text-gray-700">Complaint:</span>{" "}
+                  {entry.chiefComplaint || "-"}
+                </p>
+              )}
+
+              {activeStatus === "employee" && (
+                <div className="text-sm text-gray-600 space-y-1 mb-3">
+                  <p>
+                    <span className="font-medium">Experience:</span>{" "}
+                    {entry?.personalDetails?.experience} yrs
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium"> Qualification:</span>{" "}
+                    {entry?.personalDetails?.qualification || "-"}
+                  </p>
+                  <p>
+                    <span className="font-medium">Branch:</span>{" "}
+                    {entry?.personalDetails?.workingBranch}
+                  </p>
+                </div>
+              )}
 
               {/* Footer */}
-              <div className="flex items-center justify-between">
-                {entry.enquiryStatus === "lead" ? (
-                  <button
-                    onClick={() => {
-                      setShowConvertToPatientForm(true);
-                      setSelectedEnquiry(entry);
-                    }}
-                    className="text-sm font-medium text-red-600 hover:text-red-700"
-                  >
-                    Convert to Patient →
-                  </button>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-green-600">
-                      ● Patient
-                    </span>
-                    <Link
-                      to={`/PatientDetails/${entry?.patientId?._id}`}
-                      className="text-sm text-blue-600 hover:underline"
+              {activeStatus !== "employee" ? (
+                <div className="flex items-center justify-between">
+                  {entry.enquiryStatus === "lead" ? (
+                    <button
+                      onClick={() => {
+                        setShowConvertToPatientForm(true);
+                        setSelectedEnquiry(entry);
+                      }}
+                      className="text-sm font-medium text-red-600 hover:text-red-700"
                     >
-                      View Details
-                    </Link>
-                  </div>
-                )}
-              </div>
+                      Convert to Patient →
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-green-600">
+                        ● Patient
+                      </span>
+                      <Link
+                        to={`/PatientDetails/${entry?.patientId?._id}`}
+                        className="text-sm text-blue-600 hover:underline"
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2 ">
+                  <p>
+                    <span className="font-medium">Status:</span>{" "}
+                    <span
+                      className={`font-medium ${
+                        entry?.personalDetails?.status === "Active"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {entry?.personalDetails?.status}
+                    </span>
+                  </p>
+                  <Link
+                    to={`/EmployeeDetails/${entry?._id}`}
+                    className="text-sm text-blue-600 hover:underline font-medium"
+                  >
+                    View Details →
+                  </Link>
+                </div>
+              )}
             </div>
           ))
         )}
@@ -452,6 +595,14 @@ const EnquiryForm = () => {
           selectedEnquiry={selectedEnquiry}
           onClose={() => setShowConvertToPatientForm(false)}
           onSubmit={handleConvertToPatient}
+        />
+      )}
+
+      {showEmployeeForm && (
+        <CreateEmployeeForm
+          onClose={() => setShowEmployeeForm(false)}
+          lastEmployeeNumber={lastEmployeeNumber}
+          fetchEmployeeData={fetchEmployeeData}
         />
       )}
     </div>

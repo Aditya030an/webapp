@@ -4,6 +4,8 @@ import { CSVLink } from "react-csv";
 import html2pdf from "html2pdf.js";
 import jsPDF from "jspdf";
 import BillReview from "./BillReview";
+import BillPdf from "../Component/pdf/BillPdf";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 const categories = [
   { name: "Bill", path: "/Bill" },
   { name: "Expenses", path: "/Expenses" },
@@ -43,7 +45,7 @@ const Bill = () => {
   useEffect(() => {
     if (patientDetail && attendance) {
       const presentCount = attendance.filter(
-        (item) => item?.status === "Present"
+        (item) => item?.status === "Present",
       ).length;
 
       setCustomer(patientDetail?.name);
@@ -89,7 +91,7 @@ const Bill = () => {
   const fetchBillData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/bill`
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/bill`,
       );
       const result = await response.json();
       // console.log("Bill data:", result);
@@ -152,7 +154,7 @@ const Bill = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(payLoad),
-        }
+        },
       );
 
       const result = await response.json();
@@ -216,7 +218,7 @@ const Bill = () => {
 
   // Sort months chronologically
   const sortedMonths = Object.keys(monthlyExpenses).sort(
-    (a, b) => new Date(a) - new Date(b)
+    (a, b) => new Date(a) - new Date(b),
   );
 
   const generatePDF = () => {
@@ -249,7 +251,7 @@ const Bill = () => {
     
     <p><strong>Month:</strong> ${new Date(
       selectedYear,
-      selectedMonth - 1
+      selectedMonth - 1,
     ).toLocaleString("default", {
       month: "long",
     })}</p>
@@ -287,7 +289,7 @@ const Bill = () => {
               ${
                 idx === 0
                   ? `<td rowspan="${bill.items.length}">${new Date(
-                      bill.date
+                      bill.date,
                     ).toLocaleDateString()}</td>`
                   : ""
               }
@@ -311,9 +313,9 @@ const Bill = () => {
               <td>₹${item.price}</td>
               <td>₹${(item.qty * item.price).toFixed(2)}</td>
             </tr>
-          `
+          `,
               )
-              .join("")
+              .join(""),
           )
           .join("")}
       </tbody>
@@ -522,10 +524,10 @@ const Bill = () => {
                 <input
                   type="number"
                   min="0"
-                  max={total}
+                  // max={total}
                   value={advancePayment}
                   onChange={(e) => {
-                    if (e.target.value > total) return;
+                    // if (e.target.value > total) return;
                     Number(setAdvancePayment(e.target.value));
                   }}
                   className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
@@ -580,17 +582,42 @@ const Bill = () => {
                 Save
               </button>
 
-              <button className="bg-purple-500 text-white px-4 py-2 rounded-lg">
-                Download PDF
-              </button>
+              <PDFDownloadLink
+                document={
+                  <BillPdf
+                    bill={{
+                      billNumber,
+                      billType,
+                      customer,
+                      date,
+                      status,
+                      items,
+                      total,
+                      advancePayment,
+                    }}
+                    patient={patientDetail}
+                  />
+                }
+                fileName={`Bill-${billNumber}.pdf`}
+              >
+                {({ loading }) => (
+                  <button className="bg-purple-500 text-white px-4 py-2 rounded-lg">
+                    {loading ? "Generating PDF..." : "Download PDF"}
+                  </button>
+                )}
+              </PDFDownloadLink>
 
+              {/* <button className="bg-purple-500 text-white px-4 py-2 rounded-lg">
+                Download PDF
+              </button> */}
+{/* 
               <CSVLink
                 data={csvData}
                 filename="bill.csv"
                 className="bg-green-500 text-white px-4 py-2 rounded-lg"
               >
                 Download CSV
-              </CSVLink>
+              </CSVLink> */}
             </div>
           )}
         </div>
@@ -759,7 +786,7 @@ const Bill = () => {
                       {
                         month: "short",
                         year: "numeric",
-                      }
+                      },
                     )}
                   </span>{" "}
                   - ₹
@@ -900,7 +927,7 @@ const Bill = () => {
                       {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
-                      }
+                      },
                     )}
                   </span>
                 </div>
