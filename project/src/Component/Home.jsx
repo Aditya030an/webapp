@@ -18,21 +18,20 @@ const EnquiryForm = () => {
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
   const [employeeData, setEmployeeData] = useState([]);
   const [lastEmployeeNumber, setLastEmployeeNumber] = useState([]);
-  const [role , setRole] = useState('employee');
+  const [role, setRole] = useState("employee");
 
   const tabsByRole = {
-  admin: ["all", "lead", "patient", "other", "employee"],
-  employee: ["all", "lead", "patient", "other"],
-};
+    admin: ["all", "lead", "patient", "other", "employee"],
+    employee: ["all", "lead", "patient", "other"],
+  };
 
-
-useEffect(()=>{
-  const employee = localStorage.getItem("loginEmployeeData");
-  const data = JSON.parse(employee);
-  if(data?.personalDetails?.email === import.meta.env.VITE_ADMIN_EMAIL){
-    setRole("admin");
-  }
-} , []);
+  useEffect(() => {
+    const employee = localStorage.getItem("loginEmployeeData");
+    const data = JSON.parse(employee);
+    if (data?.personalDetails?.email === import.meta.env.VITE_ADMIN_EMAIL) {
+      setRole("admin");
+    }
+  }, []);
 
   const [formData, setFormData] = useState({
     patientName: "",
@@ -90,7 +89,7 @@ useEffect(()=>{
   const fetchEmployeeData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/employee/getAllEmployee`
+        `${import.meta.env.VITE_BACKEND_URL}/api/employee/getAllEmployee`,
       );
 
       const result = await response.json();
@@ -223,6 +222,16 @@ useEffect(()=>{
   };
 
   /* -------------------- FILTER LOGIC -------------------- */
+  const getName = (item) =>
+    item?.personalDetails?.fullName || item?.patientName || "";
+
+  const getContact = (item) =>
+    item?.personalDetails?.contactNumber || item?.contactNumber || "";
+
+  const getEmployeeId = (item) => item?.personalDetails?.employeeId || "";
+
+  const getPatientId = (item) =>
+    item?.patientId?.personalDetails?.patientId || "";
 
   const getFilteredEnquiries = () => {
     let filtered = [...enquiries];
@@ -233,23 +242,22 @@ useEffect(()=>{
     } else if (activeStatus === "patient") {
       filtered = filtered.filter((e) => e.enquiryStatus === "patient");
     } else if (activeStatus === "employee") {
-      filtered = employeeData;
+      filtered = [...employeeData];
     }
 
-    /* ---- SEARCH (Name | Phone | PatientId) ---- */
+    /* ---- SEARCH (Name | Phone | EmployeeId | PatientId) ---- */
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
 
-      filtered = filtered.filter((e) => {
-        // console.log("e", e);  
-        const nameMatch = e.patientName?.toLowerCase().includes(term);
-        const phoneMatch = e.contactNumber?.includes(term);
+      filtered = filtered.filter((item) => {
+        const nameMatch = getName(item).toLowerCase().includes(term);
+        const phoneMatch = getContact(item).includes(term);
+        const employeeIdMatch = getEmployeeId(item)
+          .toLowerCase()
+          .includes(term);
+        const patientIdMatch = getPatientId(item).toLowerCase().includes(term);
 
-        const patientIdMatch =
-          e.enquiryStatus === "patient" &&
-          e.patientId?.personalDetails?.patientId?.toLowerCase().includes(term);
-
-        return nameMatch || phoneMatch || patientIdMatch;
+        return nameMatch || phoneMatch || employeeIdMatch || patientIdMatch;
       });
     }
 
@@ -257,7 +265,6 @@ useEffect(()=>{
     filtered.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
-
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
 
