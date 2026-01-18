@@ -8,6 +8,7 @@ const AllEmployee = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showEmployeeForm, setShowEmployeeForm] = useState(false);
+  const employee = JSON.parse(localStorage.getItem("loginEmployeeData"));
 
   const fetchAllEmployees = async () => {
     try {
@@ -88,10 +89,21 @@ const AllEmployee = () => {
 
     return filtered;
   };
+if (employee?.personalDetails?.email !== import.meta.env.VITE_ADMIN_EMAIL) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <p className="text-2xl font-semibold text-gray-600">
+          You are not authorized to view this page.
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="px-2">
       <div className="flex flex-wrap gap-2 mt-10 mb-4 text-black font-semibold text-xl">
-        {"employee".toUpperCase()} :-  <span className="text-gray-600">{getFilteredEnquiries().length}</span>
+        {"employee".toUpperCase()} :-{" "}
+        <span className="text-gray-600">{getFilteredEnquiries().length}</span>
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">

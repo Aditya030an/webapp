@@ -1,12 +1,10 @@
-
-
-
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 const NavigationTabs = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const employee = JSON.parse(localStorage.getItem("loginEmployeeData"));
 
   const navigate = useNavigate();
   const isLoggedIn = !!localStorage.getItem("webapptoken");
@@ -22,16 +20,11 @@ const NavigationTabs = () => {
     { name: "All Enquiry", path: "/allEnquiry" },
     { name: "All Employee", path: "/allEmployee" },
     { name: "Reports", path: "/Reports" },
-    // { name: "Attendence", path: "/Attendence" },
   ];
 
-  // const assessmentItems = [
-  //   { name: "Neurological", path: "/assessment" },
-  //   { name: "Musculoskeletal", path: "/musculoskeletal" },
-  //   { name: "Obesity Management", path: "/obesity" },
-  //   { name: "Pilates", path: "/pilates" },
-  //   { name: "Treatment Plan", path: "/treatmentPlan" },
-  // ];
+  if (employee?.personalDetails?.email !== import.meta.env.VITE_ADMIN_EMAIL) {
+    tabs.splice(2, 1);
+  }
 
   return (
     <nav className="bg-white shadow-md">
@@ -42,42 +35,15 @@ const NavigationTabs = () => {
 
         {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8 text-lg font-semibold">
-          {tabs.map((tab, index) =>
-            tab.isDropdown ? (
-              <div
-                key={index}
-                className="relative"
-                onMouseEnter={() => setDropdownOpen(true)}
-                onMouseLeave={() => setDropdownOpen(false)}
-              >
-                <button className="text-gray-700 hover:text-blue-600">
-                  Assessment
-                </button>
-
-                {dropdownOpen && (
-                  <div className="absolute top-10 left-0 bg-white border rounded shadow-lg w-56 z-50">
-                    {assessmentItems.map((item, idx) => (
-                      <Link
-                        key={idx}
-                        to={item.path}
-                        className="block px-4 py-2 hover:bg-gray-100 text-sm"
-                      >
-                        {item.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                key={index}
-                to={tab.path}
-                className="text-gray-700 hover:text-blue-600"
-              >
-                {tab.name}
-              </Link>
-            )
-          )}
+          {tabs.map((tab, index) => (
+            <Link
+              key={index}
+              to={tab.path}
+              className="text-gray-700 hover:text-blue-600"
+            >
+              {tab.name}
+            </Link>
+          ))}
         </div>
 
         {/* Auth / Logout buttons */}
@@ -166,7 +132,7 @@ const NavigationTabs = () => {
                 >
                   {tab.name}
                 </Link>
-              )
+              ),
             )}
 
             {/* Auth / Logout buttons in mobile */}
