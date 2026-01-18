@@ -4,7 +4,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 const CreateEmployeeForm = ({
   onClose,
   lastEmployeeNumber,
-  fetchEmployeeData,
+  fetchAllEmployees,
 }) => {
   const [formData, setFormData] = useState({
     employeeId: lastEmployeeNumber || "MR-EMP-0001",
@@ -17,7 +17,8 @@ const CreateEmployeeForm = ({
     password: "",
     workingBranch: "",
     status: "Active",
-    employmentType: "",
+    employeeType: "",
+    employeePost: "",
     joiningDate: "",
     exitDate: "",
   });
@@ -48,15 +49,6 @@ const CreateEmployeeForm = ({
       }
     }
 
-    // if (name === "exitDate" && formData.joiningDate) {
-    //   const joiningDate = new Date(formData.joiningDate);
-
-    //   if (newDate < joiningDate) {
-    //     alert("Exit date cannot be before joining date");
-    //     return;
-    //   }
-    // }
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -74,7 +66,7 @@ const CreateEmployeeForm = ({
       password,
       workingBranch,
       status,
-      employmentType,
+      employeeType,
       joiningDate,
       exitDate,
     } = formData;
@@ -82,8 +74,7 @@ const CreateEmployeeForm = ({
     if (
       !fullName ||
       !qualification ||
-      !registrationNo ||
-      !employmentType ||
+      !employeeType ||
       !joiningDate ||
       !password ||
       !workingBranch ||
@@ -112,13 +103,6 @@ const CreateEmployeeForm = ({
       alert("Password must be at least 8 characters long");
       return false;
     }
-    // if (!exitDate) {
-    //   if (joiningDate > exitDate) {
-    //     alert("Exit date cannot be before joining date");
-    //     return false;
-    //   }
-    // }
-
     return true;
   };
 
@@ -136,17 +120,17 @@ const CreateEmployeeForm = ({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-             token: localStorage.getItem("webapptoken"),
+            token: localStorage.getItem("webapptoken"),
           },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       const result = await response.json();
       console.log("result employee  , , , ", result);
       if (result?.success) {
         alert(result?.message);
-        fetchEmployeeData();
+        fetchAllEmployees();
         setFormData({
           employeeId: lastEmployeeNumber || "MR-EMP-0001",
           fullName: "",
@@ -158,11 +142,19 @@ const CreateEmployeeForm = ({
           password: "",
           workingBranch: "",
           status: "Active",
-          employmentType: "",
+          employeeType: "",
           joiningDate: "",
           exitDate: "",
         });
         onClose();
+      }else {
+        if(result?.code === "TOKEN_EXPIRED" || result?.code === "INVALID_TOKEN") {
+          alert(result?.message + " Please login again");
+          localStorage.removeItem("webapptoken");
+          window.location.reload();
+        }else{
+          alert(result?.message);
+        }
       }
     } catch (error) {
       console.log(error);
@@ -239,11 +231,17 @@ const CreateEmployeeForm = ({
             value={formData.workingBranch}
             onChange={handleChange}
           />
-
           <Select
-            label="Employment Type"
-            name="employmentType"
-            value={formData.employmentType}
+            label="Status"
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            options={["Active", "Inactive"]}
+          />
+          <Select
+            label="Employee Type"
+            name="employeeType"
+            value={formData.employeeType}
             onChange={handleChange}
             options={[
               "Full Time",
@@ -253,13 +251,18 @@ const CreateEmployeeForm = ({
               "Intern / Trainee",
             ]}
           />
-
           <Select
-            label="Status"
-            name="status"
-            value={formData.status}
+            label="Employee Post"
+            name="employeePost"
+            value={formData.employeePost}
             onChange={handleChange}
-            options={["Active", "Inactive"]}
+            options={[
+              "Full Time",
+              "Part Time",
+              "Visiting Consultant",
+              "Home Visit Therapist",
+              "Intern / Trainee",
+            ]}
           />
 
           <Input
@@ -310,7 +313,9 @@ const Input = ({ label, readOnly, ...props }) => (
     {console.log("props", props)}
     <label className="block text-sm mb-1">
       {label}
-      {label !== "Date of Exit" && <span className="text-red-500">*</span>}
+      {label !== "Date of Exit" && label !== "Registration No" && (
+        <span className="text-red-500">*</span>
+      )}
     </label>
     <div className="flex items-center justify-between gap-2">
       <input
@@ -345,7 +350,8 @@ const Input = ({ label, readOnly, ...props }) => (
 const Select = ({ label, options, ...props }) => (
   <div>
     <label className="block text-sm mb-1">
-      {label} <span className="text-red-500">*</span>
+      {label}
+      {label !== "Employee Post" && <span className="text-red-500">*</span>}
     </label>
     <select {...props} className="w-full border p-2 rounded">
       <option value="">Select</option>

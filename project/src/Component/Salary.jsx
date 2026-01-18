@@ -2,14 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 
-const categories = [
-  { name: "Bill", path: "/Bill" },
-  { name: "Expenses", path: "/Expenses" },
-  { name: "Inventory", path: "/Inventory" },
-  { name: "Rent", path: "/Rent" },
-  { name: "Salary", path: "/Salary" },
-  { name: "Total", path: "/Total" },
-];
 
 const Salary = () => {
   const [employees, setEmployees] = useState([
@@ -170,24 +162,6 @@ const Salary = () => {
   return (
     <div>
       <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-        {/* Navbar */}
-        <nav className="bg-white shadow-md px-6 py-4 mb-4 rounded-lg">
-          <h1 className="text-xl font-bold text-gray-800">Report Dashboard</h1>
-        </nav>
-
-        {/* Category Links */}
-        <div className="bg-white shadow-sm px-6 py-3 rounded-lg mb-6 flex space-x-4 overflow-x-auto">
-          {categories.map((cat) => (
-            <Link
-              key={cat.name}
-              to={cat.path}
-              className="px-4 py-2 rounded-full font-medium bg-gray-200 text-gray-700 hover:bg-blue-100"
-            >
-              {cat.name}
-            </Link>
-          ))}
-        </div>
-
         {/* Salary Form */}
         <div className="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">

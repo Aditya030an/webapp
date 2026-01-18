@@ -79,7 +79,8 @@ const createEmployee = async (req, res) => {
       password,
       workingBranch,
       status,
-      employmentType,
+      employeeType,
+      employeePost,
       joiningDate,
       exitDate,
     } = req.body;
@@ -87,7 +88,7 @@ const createEmployee = async (req, res) => {
     const loginEmployeeId = req.id;
 
     console.log("loginEmployeeId", loginEmployeeId);
-     const loginEmployee = await Employee.findById(loginEmployeeId);
+    const loginEmployee = await Employee.findById(loginEmployeeId);
 
     if (!loginEmployee) {
       return res.status(401).json({
@@ -95,7 +96,7 @@ const createEmployee = async (req, res) => {
         message: "Employee not found",
       });
     }
-    console.log("employee"    , loginEmployee);
+    console.log("employee", loginEmployee);
     // ✅ Check admin using personalDetails.email
     if (loginEmployee.personalDetails.email !== process.env.ADMIN_EMAIL) {
       return res.status(403).json({
@@ -104,19 +105,19 @@ const createEmployee = async (req, res) => {
       });
     }
 
-    console.log("login employee, , ,  , , ," , loginEmployee);
+    console.log("login employee, , ,  , , ,", loginEmployee);
 
     console.log("create employee", req.body);
-  
+
     if (
       !fullName ||
       !qualification ||
-      !registrationNo ||
-      experience === undefined || experience === null ||
+      experience === undefined ||
+      experience === null ||
       !contactNumber ||
       !email ||
       !password ||
-      !employmentType ||
+      !employeeType ||
       !workingBranch ||
       !status ||
       !joiningDate ||
@@ -154,7 +155,8 @@ const createEmployee = async (req, res) => {
         password,
         workingBranch,
         status,
-        employmentType,
+        employeeType,
+        employeePost,
         joiningDate,
         exitDate,
       },
@@ -176,7 +178,12 @@ const createEmployee = async (req, res) => {
 
 const getEmployeeById = async (req, res) => {
   try {
-    const employee = await Employee.findById(req.params.id).populate("patientLook.patientId");
+    const employee = await Employee.findById(req.params.id)
+      .populate("patientLook.patientId")
+      .populate({
+        path:"attendance",
+        options: { sort: { createdAt: -1 } },
+      });
     if (!employee) {
       return res.status(404).json({
         success: false,
@@ -209,7 +216,8 @@ const updateEmployee = async (req, res) => {
       contactNumber,
       email,
       password,
-      employmentType,
+      employeeType,
+      employeePost,
       joiningDate,
       workingBranch,
       status,
@@ -235,7 +243,8 @@ const updateEmployee = async (req, res) => {
         password,
         workingBranch,
         status,
-        employmentType,
+        employeeType,
+        employeePost,
         joiningDate,
         exitDate,
       },
@@ -278,43 +287,43 @@ const deleteEmployeeById = async (req, res) => {
   }
 };
 
-  const loginEmployee = async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      console.log("loginData" , req.body);
-      const employee = await Employee.findOne({ "personalDetails.email" : email });
-      console.log("employee" , employee);
-      if (!employee) {
-        return res.status(404).json({
-          success: false,
-          message: "Employee not found",
-        });
-      }
-
-      if (employee.personalDetails.password !== password) {
-        return res.status(401).json({
-          success: false,
-          message: "Invalid credentials",
-        });
-      }
-
-      const token = jwt.sign({ id: employee._id }, process.env.JWT_SECRET, {
-        expiresIn: "1d",
-      });
-      res.status(200).json({
-        success: true,
-        message: "Login successful",
-        token,
-        employee,
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).json({
+const loginEmployee = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log("loginData", req.body);
+    const employee = await Employee.findOne({ "personalDetails.email": email });
+    console.log("employee", employee);
+    if (!employee) {
+      return res.status(404).json({
         success: false,
-        message: "Error fetching employee",
+        message: "Employee not found",
       });
     }
-  };
+
+    if (employee.personalDetails.password !== password) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
+      });
+    }
+
+    const token = jwt.sign({ id: employee._id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      employee,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching employee",
+    });
+  }
+};
 
 export {
   createEmployee,

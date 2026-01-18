@@ -21,9 +21,13 @@ import Attendence from "./Component/Attendence";
 import PatientDetails from "./Component/PatientDetails.jsx";
 import EmployeeDetails from "./Component/EmployeeDetails.jsx";
 import { useState } from "react";
+import AllEnquiry from "./Component/AllEnquiry.jsx";
+import AllEmployee from "./Component/AllEmployee.jsx";
+import ProtectedRouteAdmin from "./routers/ProtectedRouteAdmin.jsx";
+import CreateBill from "./Component/CreateBill.jsx";
 
 function App() {
-  const [role , setRole] = useState("employee");
+  const [role, setRole] = useState("employee");
   return (
     <Router>
       <Navbar />
@@ -41,24 +45,171 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/allEnquiry"
+          element={
+            <ProtectedRoute>
+              <AllEnquiry />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/allEmployee"
+          element={
+            <ProtectedRoute>
+              <ProtectedRouteAdmin>
+                <AllEmployee />
+              </ProtectedRouteAdmin>
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/assessment" element={<ProtectedRoute><Assessment /></ProtectedRoute>} />
-        <Route path="/musculoskeletal" element={<ProtectedRoute><Musculoskeletal /></ProtectedRoute>} />
-        <Route path="/obesity" element={<ProtectedRoute><Obesity /></ProtectedRoute>} />
-        <Route path="/pilates" element={<ProtectedRoute><Pilates /></ProtectedRoute>} />
-        <Route path="/treatmentPlan" element={<ProtectedRoute><TreatmentPlan /></ProtectedRoute>} />
-        <Route path="/client" element={<ProtectedRoute><Client /></ProtectedRoute>} />
-        <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-        <Route path="/bill" element={<ProtectedRoute><Bill /></ProtectedRoute>} />
-        <Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
-        <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-        <Route path="/salary" element={<ProtectedRoute><Salary /></ProtectedRoute>} />
-        <Route path="/rent" element={<ProtectedRoute><Rent /></ProtectedRoute>} />
-        <Route path="/total" element={<ProtectedRoute><Total /></ProtectedRoute>} />
-        <Route path="/attendence" element={<ProtectedRoute><Attendence /></ProtectedRoute>} />
+        <Route
+          path="/assessment"
+          element={
+            <ProtectedRoute>
+              <Assessment />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/musculoskeletal"
+          element={
+            <ProtectedRoute>
+              <Musculoskeletal />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/obesity"
+          element={
+            <ProtectedRoute>
+              <Obesity />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pilates"
+          element={
+            <ProtectedRoute>
+              <Pilates />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/treatmentPlan"
+          element={
+            <ProtectedRoute>
+              <TreatmentPlan />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/client"
+          element={
+            <ProtectedRoute>
+              <Client />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <Reports />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            index
+            element={
+              <div className="text-gray-500 text-lg">
+                Select a report to view details
+              </div>
+            }
+          />
+          <Route
+            path="bill"
+            element={
+              <ProtectedRoute>
+                <Bill />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="expenses"
+            element={
+              <ProtectedRoute>
+                <Expenses />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="inventory"
+            element={
+              <ProtectedRoute>
+                <Inventory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="salary"
+            element={
+              <ProtectedRoute>
+                <Salary />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rent"
+            element={
+              <ProtectedRoute>
+                <Rent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="total"
+            element={
+              <ProtectedRoute>
+                <Total />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+        <Route
+          path="/attendence"
+          element={
+            <ProtectedRoute>
+              <Attendence />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/PatientDetails/:id" element={<ProtectedRoute><PatientDetails /></ProtectedRoute>} />
-        <Route path="/EmployeeDetails/:id" element={<ProtectedRoute><EmployeeDetails role={role} /></ProtectedRoute>} />
+        <Route
+          path="/PatientDetails/:id"
+          element={
+            <ProtectedRoute>
+              <PatientDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/createBill"
+          element={
+            <ProtectedRoute>
+              <CreateBill />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/EmployeeDetails/:id"
+          element={
+            <ProtectedRoute>
+              <EmployeeDetails role={role} />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </Router>
   );

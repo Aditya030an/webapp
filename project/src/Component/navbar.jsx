@@ -19,19 +19,19 @@ const NavigationTabs = () => {
 
   const tabs = [
     { name: "Enquiry", path: "/" },
-    { name: "Assessment", isDropdown: true },
-    { name: "Client", path: "/client" },
+    { name: "All Enquiry", path: "/allEnquiry" },
+    { name: "All Employee", path: "/allEmployee" },
     { name: "Reports", path: "/Reports" },
-    { name: "Attendence", path: "/Attendence" },
+    // { name: "Attendence", path: "/Attendence" },
   ];
 
-  const assessmentItems = [
-    { name: "Neurological", path: "/assessment" },
-    { name: "Musculoskeletal", path: "/musculoskeletal" },
-    { name: "Obesity Management", path: "/obesity" },
-    { name: "Pilates", path: "/pilates" },
-    { name: "Treatment Plan", path: "/treatmentPlan" },
-  ];
+  // const assessmentItems = [
+  //   { name: "Neurological", path: "/assessment" },
+  //   { name: "Musculoskeletal", path: "/musculoskeletal" },
+  //   { name: "Obesity Management", path: "/obesity" },
+  //   { name: "Pilates", path: "/pilates" },
+  //   { name: "Treatment Plan", path: "/treatmentPlan" },
+  // ];
 
   return (
     <nav className="bg-white shadow-md">

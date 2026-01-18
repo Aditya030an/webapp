@@ -8,6 +8,7 @@ import {
   FaEye,
   FaEyeSlash,
 } from "react-icons/fa";
+import AttendanceSection from "./employeePersonalDetails/AttendanceSection";
 
 const EmployeeDetails = () => {
   const { id } = useParams();
@@ -63,21 +64,24 @@ const EmployeeDetails = () => {
 
   const personal = employeeDetail?.personalDetails;
   const patients = employeeDetail?.patientLook?.patientId || [];
+  const attendance = employeeDetail?.attendance || [];
+  const personalDetails = employeeDetail?.personalDetails;
 
   useEffect(() => {
     if (personal) {
       setPersonalForm({
         employeeId: personal.employeeId,
         fullName: personal.fullName,
-        registrationNo: personal.registrationNo,
+        registrationNo: personal.registrationNo || "No Registration No.",
         qualification: personal.qualification,
-        experience: personal.experience,
+        experience: personal.experience || 0,
         contactNumber: personal.contactNumber,
         email: personal.email,
         password: personal.password,
         workingBranch: personal.workingBranch,
         status: personal.status,
-        employmentType: personal.employmentType,
+        employeeType: (personal.employeeType || personal?.employmentType) || "",
+        employeePost: personal.employeePost ||"No Post",
         joiningDate: personal.joiningDate?.slice(0, 10),
         exitDate: personal.exitDate?.slice(0, 10),
       });
@@ -95,7 +99,7 @@ const EmployeeDetails = () => {
       password,
       workingBranch,
       status,
-      employmentType,
+      employeeType,
       joiningDate,
       exitDate,
     } = personalForm;
@@ -104,7 +108,7 @@ const EmployeeDetails = () => {
       !fullName ||
       !qualification ||
       !registrationNo ||
-      !employmentType ||
+      !employeeType ||
       !contactNumber ||
       !email ||
       !password ||
@@ -116,7 +120,7 @@ const EmployeeDetails = () => {
       return false;
     }
 
-    if (experience < 0) {
+    if (experience <= 0) {
       alert("Experience cannot be negative");
       return false;
     }
@@ -146,7 +150,7 @@ const EmployeeDetails = () => {
     const { name, value } = e.target;
 
     // Experience cannot be negative
-    if (name === "experience" && value < 0) return;
+    if (name === "experience" && value <= 0) return;
 
     // Contact number: only digits & max 10
     if (name === "contactNumber") {
@@ -203,13 +207,14 @@ const EmployeeDetails = () => {
         fullName: personal.fullName,
         registrationNo: personal.registrationNo,
         qualification: personal.qualification,
-        experience: personal.experience,
+        experience: personal.experience || 0,
         contactNumber: personal.contactNumber,
         email: personal.email,
         password: personal.password,
         workingBranch: personal.workingBranch,
         status: personal.status,
-        employmentType: personal.employmentType,
+        employeeType: personal.employeeType,
+        employeePost: personal.employeePost,
         joiningDate: personal.joiningDate?.slice(0, 10),
         exitDate: personal.exitDate?.slice(0, 10),
       });
@@ -317,11 +322,11 @@ const EmployeeDetails = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <Field label="Employee ID" value={personalForm.employeeId} disabled />
-          <Field label="Full Name" value={personalForm.fullName} disabled />
+          <Field label="Full Name" value={personalForm.fullName}  />
           <Field
             label="Registration No"
             value={personalForm.registrationNo}
-            disabled
+            
           />
           <Field
             label="Qualification"
@@ -346,7 +351,7 @@ const EmployeeDetails = () => {
             onChange={handlePersonalChange}
             editable={isEditingPersonal}
           />
-          <Field label="Email" value={personalForm.email} disabled />
+          <Field label="Email" value={personalForm.email}  />
           <Field
             label="Password"
             name="password"
@@ -373,9 +378,23 @@ const EmployeeDetails = () => {
             options={["Active", "Inactive"]}
           />
           <SelectField
-            label="Employment Type"
-            name="employmentType"
-            value={personalForm.employmentType}
+            label="Employee Type"
+            name="employeeType"
+            value={personalForm.employeeType || personalForm.employmentType}
+            onChange={handlePersonalChange}
+            editable={isEditingPersonal}
+            options={[
+              "Full Time",
+              "Part Time",
+              "Visiting Consultant",
+              "Home Visit Therapist",
+              "Intern / Trainee",
+            ]}
+          />
+          <SelectField
+            label="Employee Post"
+            name="employeePost"
+            value={personalForm.employeePost}
             onChange={handlePersonalChange}
             editable={isEditingPersonal}
             options={[
@@ -451,6 +470,9 @@ const EmployeeDetails = () => {
           </div>
         )}
       </div>
+
+      {/* ================= Attendance ================= */}
+      <AttendanceSection attendance={attendance} personalDetails={personalDetails} id={id} />
     </div>
   );
 };
@@ -508,11 +530,11 @@ const Field = ({
         <span className="font-medium text-gray-800 flex items-center gap-2">
           {isPassword
             ? showPassword
-              ? value || "-"
+              ? value ?? "-"
               : "********"
             : label === "Joining Date" || label === "Exit Date"
               ? formatDate(value)
-              : value || "-"}
+              : value ?? "-"}
 
           {label === "Experience" && " Years"}
 

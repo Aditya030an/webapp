@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const attendanceSchema = new mongoose.Schema(
   {
-    patientId: {
+    id: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "patient",
       required: true,
@@ -17,6 +17,12 @@ const attendanceSchema = new mongoose.Schema(
       enum: ["Present", "Absent"],
       default: "Present",
     },
+    type:{
+      type: String,
+      required: true,
+      enum: ["employee", "patient"],
+      default: "patient",
+    }
   },
   { timestamps: true }
 );

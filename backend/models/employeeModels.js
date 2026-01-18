@@ -18,7 +18,6 @@ const EmployeeSchema = new mongoose.Schema(
       },
       registrationNo: {
         type: String,
-        required: true,
       },
       experience: {
         type: Number,
@@ -37,7 +36,7 @@ const EmployeeSchema = new mongoose.Schema(
         required: true,
         unique: true,
       },
-      password:{
+      password: {
         type: String,
         required: true,
       },
@@ -48,7 +47,7 @@ const EmployeeSchema = new mongoose.Schema(
         default: "Active",
         required: true,
       },
-      employmentType: {
+      employeeType: {
         type: String,
         enum: [
           "Full Time",
@@ -59,6 +58,9 @@ const EmployeeSchema = new mongoose.Schema(
         ],
         required: true,
       },
+      employeePost: {
+        type: String,
+      },
       joiningDate: {
         type: Date,
         required: true,
@@ -67,16 +69,22 @@ const EmployeeSchema = new mongoose.Schema(
         type: Date,
       },
     },
-    patientLook:{
+    patientLook: {
       patientId: {
         type: [mongoose.Schema.Types.ObjectId],
         ref: "Patient",
         required: true,
         default: [],
       },
-    }
+    },
+    attendance: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Attendance",
+      },
+    ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 const Employee = mongoose.model("Employee", EmployeeSchema);

@@ -255,7 +255,16 @@ const NeuroPhysioFullForm = () => {
         });
         navigate(`/PatientDetails/${patient_id}`);
       } else {
-        alert(result?.message);
+        if (
+          result?.code === "TOKEN_EXPIRED" ||
+          result?.code === "INVALID_TOKEN"
+        ) {
+          alert(result?.message + " Please login again");
+          localStorage.removeItem("webapptoken");
+          window.location.reload();
+        } else {
+          alert(result?.message);
+        }
       }
     } catch (error) {
       console.log("error inside the nero", error);

@@ -15,7 +15,7 @@ const BillSection = ({ billing, patientDetail, attendance }) => {
       <h2 className="font-semibold text-lg mb-3">Billing</h2>
 
       <button
-        onClick={() => goTo("/bill")}
+        onClick={() => goTo("/createBill")}
         className="px-3 py-1 mb-2 text-sm border rounded hover:bg-gray-100"
       >
         Generate Bill

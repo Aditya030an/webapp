@@ -73,7 +73,6 @@ const styles = StyleSheet.create({
   },
 });
 
-
 const PdfTemplate = ({ children }) => {
   return (
     <Document>
@@ -82,16 +81,24 @@ const PdfTemplate = ({ children }) => {
         <View style={styles.header} fixed>
           <Image src="/logo.jpeg" style={styles.logo} />
           <View>
-            <Text  style={{marginBottom:4}}>Dr. Mayank Gupta (PT)</Text>
-            <Text style={{marginBottom:4}}>Certified PNF Expert</Text>
-            <Text style={{marginBottom:4}}>Registration No. SCH-01/DEG2/23326/2014</Text>
+            <Text style={{ marginBottom: 4 }}>Dr. Mayank Gupta (PT), BPT</Text>
+            <Text style={{ marginBottom: 4 }}>
+              Certified PNF Practitioner (IPNFA – Level 3A)
+            </Text>
+            <Text style={{ marginBottom: 4 }}>
+              Certified in Mulligan Concept Manual Therapy (C.O.M.M.T)
+            </Text>
+            <Text style={{ marginBottom: 4 }}>
+              Certified Pilates Instructor
+            </Text>
+            <Text style={{ marginBottom: 4 }}>
+              Registration No.: SCH-01/DEG2/25326/2014
+            </Text>
           </View>
         </View>
 
         {/* Dynamic Content */}
-        <View style={styles.content}>
-          {children}
-          </View>
+        <View style={styles.content}>{children}</View>
         {/* <View style={{ marginTop: 30 }}>
           <Text>Authorized Signature</Text>
           <Text style={{ marginTop: 25, fontWeight: "bold" }}>
@@ -110,7 +117,8 @@ const PdfTemplate = ({ children }) => {
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text>
-            Movement Rehab, Near NDPS School, Khandwa Road, Indore 452020
+          Bhawna Nager, Akhand Param Dham Near NDP'S School khandwa road indore 452020
+            {/* Movement Rehab, Near NDPS School, Khandwa Road, Indore 452020 */}
           </Text>
           <Text>+91 6262 666 558 | movementrehab.in@gmail.com</Text>
           <Text

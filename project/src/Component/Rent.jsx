@@ -1,108 +1,7 @@
-// import React, { useState } from "react";
-
-// const Rent = () => {
-//   const [propertyName, setPropertyName] = useState("");
-//   const [month, setMonth] = useState("");
-//   const [amount, setAmount] = useState(0);
-//   const [dueDate, setDueDate] = useState("");
-//   const [status, setStatus] = useState("Unpaid");
-//   const [notes, setNotes] = useState("");
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-6">
-//       <div className="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
-//         <h2 className="text-2xl font-bold text-gray-800 mb-6">Record Rent Payment</h2>
-
-//         <div className="grid grid-cols-2 gap-4 mb-6">
-//           <div>
-//             <label className="text-gray-500 block mb-1">Property Name</label>
-//             <input
-//               type="text"
-//               value={propertyName}
-//               onChange={(e) => setPropertyName(e.target.value)}
-//               placeholder="e.g. Clinic Building"
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//           <div>
-//             <label className="text-gray-500 block mb-1">Month</label>
-//             <input
-//               type="month"
-//               value={month}
-//               onChange={(e) => setMonth(e.target.value)}
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//           <div>
-//             <label className="text-gray-500 block mb-1">Amount</label>
-//             <input
-//               type="number"
-//               value={amount}
-//               onChange={(e) => setAmount(Number(e.target.value))}
-//               placeholder="$0.00"
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//           <div>
-//             <label className="text-gray-500 block mb-1">Due Date</label>
-//             <input
-//               type="date"
-//               value={dueDate}
-//               onChange={(e) => setDueDate(e.target.value)}
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//           <div className="col-span-2">
-//             <label className="text-gray-500 block mb-1">Status</label>
-//             <select
-//               value={status}
-//               onChange={(e) => setStatus(e.target.value)}
-//               className="w-full border border-gray-300 p-2 rounded"
-//             >
-//               <option value="Paid">Paid</option>
-//               <option value="Unpaid">Unpaid</option>
-//               <option value="Pending">Pending</option>
-//             </select>
-//           </div>
-//           <div className="col-span-2">
-//             <label className="text-gray-500 block mb-1">Notes</label>
-//             <textarea
-//               value={notes}
-//               onChange={(e) => setNotes(e.target.value)}
-//               placeholder="Optional remarks..."
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//         </div>
-
-//         {/* Action Buttons */}
-//         <div className="flex justify-end space-x-4">
-//           <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">
-//             Save
-//           </button>
-//           <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-//             Print
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Rent;
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 
-const categories = [
-  { name: "Bill", path: "/Bill" },
-  { name: "Expenses", path: "/Expenses" },
-  { name: "Inventory", path: "/Inventory" },
-  { name: "Rent", path: "/Rent" },
-  { name: "Salary", path: "/Salary" },
-  { name: "Total", path: "/Total" },
-];
 
 const Rent = () => {
   const [propertyName, setPropertyName] = useState("");
@@ -257,21 +156,6 @@ const Rent = () => {
   return (
     <div>
       <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-        <nav className="bg-white shadow-md px-6 py-4 mb-4 rounded-lg">
-          <h1 className="text-xl font-bold text-gray-800">Report Dashboard</h1>
-        </nav>
-
-        <div className="bg-white shadow-sm px-6 py-3 rounded-lg mb-6 flex space-x-4 overflow-x-auto">
-          {categories.map((cat) => (
-            <Link
-              key={cat.name}
-              to={cat.path}
-              className="px-4 py-2 rounded-full font-medium bg-gray-200 text-gray-700 hover:bg-blue-100"
-            >
-              {cat.name}
-            </Link>
-          ))}
-        </div>
 
         {/* Main Card */}
         <div className="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">

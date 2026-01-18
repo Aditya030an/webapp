@@ -1,138 +1,9 @@
-// import React, { useState } from "react";
-
-// const Expenses = () => {
-//   const [date, setDate] = useState("");
-//   const [category, setCategory] = useState("");
-//   const [notes, setNotes] = useState("");
-//   const [expenses, setExpenses] = useState([
-//     { description: "", amount: 0 },
-//   ]);
-
-//   const handleExpenseChange = (index, field, value) => {
-//     const updated = [...expenses];
-//     updated[index][field] = field === "amount" ? Number(value) : value;
-//     setExpenses(updated);
-//   };
-
-//   const addExpense = () => {
-//     setExpenses([...expenses, { description: "", amount: 0 }]);
-//   };
-
-//   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
-
-//   return (
-//     <div className="min-h-screen bg-gray-100 p-6">
-//       <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-md">
-//         <h2 className="text-2xl font-bold text-gray-800 mb-6">Record Expenses</h2>
-
-//         {/* Expense Info */}
-//         <div className="grid grid-cols-2 gap-4 mb-6">
-//           <div>
-//             <label className="text-gray-500 block mb-1">Date</label>
-//             <input
-//               type="date"
-//               value={date}
-//               onChange={(e) => setDate(e.target.value)}
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//           <div>
-//             <label className="text-gray-500 block mb-1">Category</label>
-//             <input
-//               type="text"
-//               value={category}
-//               onChange={(e) => setCategory(e.target.value)}
-//               placeholder="e.g. Utilities, Supplies"
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//           <div className="col-span-2">
-//             <label className="text-gray-500 block mb-1">Notes</label>
-//             <textarea
-//               value={notes}
-//               onChange={(e) => setNotes(e.target.value)}
-//               placeholder="Additional info..."
-//               className="w-full border border-gray-300 p-2 rounded"
-//             />
-//           </div>
-//         </div>
-
-//         {/* Expense Items */}
-//         <table className="w-full text-left mb-4">
-//           <thead>
-//             <tr className="bg-gray-200">
-//               <th className="p-2">Description</th>
-//               <th className="p-2">Amount</th>
-//             </tr>
-//           </thead>
-//           <tbody>
-//             {expenses.map((expense, idx) => (
-//               <tr key={idx} className="border-b">
-//                 <td className="p-2">
-//                   <input
-//                     type="text"
-//                     value={expense.description}
-//                     onChange={(e) => handleExpenseChange(idx, "description", e.target.value)}
-//                     placeholder="Expense detail"
-//                     className="w-full border border-gray-300 p-1 rounded"
-//                   />
-//                 </td>
-//                 <td className="p-2">
-//                   <input
-//                     type="number"
-//                     min="0"
-//                     value={expense.amount}
-//                     onChange={(e) => handleExpenseChange(idx, "amount", e.target.value)}
-//                     className="w-full border border-gray-300 p-1 rounded"
-//                   />
-//                 </td>
-//               </tr>
-//             ))}
-//           </tbody>
-//         </table>
-
-//         <button
-//           onClick={addExpense}
-//           className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
-//         >
-//           + Add Expense
-//         </button>
-
-//         {/* Total */}
-//         <div className="text-right text-lg font-bold mt-2 mb-6">
-//           Total: ${total}
-//         </div>
-
-//         {/* Action Buttons */}
-//         <div className="flex justify-end space-x-4">
-//           <button className="bg-blue-500 text-white px-4 py-2 rounded-lg">
-//             Save
-//           </button>
-//           <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-//             Print
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Expenses;
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2pdf from "html2pdf.js";
 
-const categories = [
-  { name: "Bill", path: "/Bill" },
-  { name: "Expenses", path: "/Expenses" },
-  { name: "Inventory", path: "/Inventory" },
-  { name: "Rent", path: "/Rent" },
-  { name: "Salary", path: "/Salary" },
-  { name: "Total", path: "/Total" },
-];
 
 const Expenses = () => {
   const [date, setDate] = useState("");
@@ -328,24 +199,7 @@ const Expenses = () => {
   return (
     <div>
       <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-        {/* Navbar */}
-        <nav className="bg-white shadow-md px-6 py-4 mb-4 rounded-lg">
-          <h1 className="text-xl font-bold text-gray-800">Report Dashboard</h1>
-        </nav>
-
-        {/* Category Links */}
-        <div className="bg-white shadow-sm px-6 py-3 rounded-lg mb-6 flex space-x-4 overflow-x-auto">
-          {categories.map((cat) => (
-            <Link
-              key={cat.name}
-              to={cat.path}
-              className="px-4 py-2 rounded-full font-medium bg-gray-200 text-gray-700 hover:bg-blue-100"
-            >
-              {cat.name}
-            </Link>
-          ))}
-        </div>
-
+        
         {/* Main Form */}
         <div className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
