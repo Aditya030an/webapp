@@ -127,7 +127,7 @@ const CreateBill = () => {
           body: JSON.stringify(payLoad),
         },
       );
-
+      
       const result = await response.json();
       console.log("Bill saved:", result);
       if (result?.success) {

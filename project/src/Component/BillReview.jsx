@@ -8,8 +8,7 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
     !bill?.date ||
     !bill?.status ||
     !bill?.items ||
-    !bill?.total ||
-    !bill?.advancePayment
+    !bill?.total
   ){
     alert("Please fill in all the required fields.");
     return null;
@@ -18,7 +17,7 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
   console.log(bill);
 
   const remainingBalance =
-    Number(bill.total) - Number(bill.advancePayment || 0);
+    Number(bill?.total) - Number(bill?.advancePayment || 0);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -27,24 +26,24 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
         <div className="mb-4">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-blue-600">
-              {bill.billNumber}
+              {bill?.billNumber}
             </h2>
             <span className="text-sm font-medium text-gray-600">
-              {bill.billType}
+              {bill?.billType}
             </span>
           </div>
 
-          <p className="text-sm text-gray-600">Customer: {bill.customer}</p>
+          <p className="text-sm text-gray-600">Customer: {bill?.customer}</p>
           <p className="text-sm text-gray-600">
-            Date: {new Date(bill.date).toLocaleDateString("en-GB")}
+            Date: {new Date(bill?.date).toLocaleDateString("en-GB")}
           </p>
 
           <p
             className={`text-sm font-medium ${
-              bill.status === "Cash" ? "text-red-500" : "text-green-600"
+              bill?.status === "Cash" ? "text-red-500" : "text-green-600"
             }`}
           >
-            Status: {bill.status}
+            Status: {bill?.status}
           </p>
         </div>
 
@@ -71,7 +70,7 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
             <span>Total Amount</span>
             <span className="font-semibold">
               ₹
-              {bill.total.toLocaleString("en-IN", {
+              {bill?.total.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

@@ -12,7 +12,7 @@ const billSchema = new mongoose.Schema(
     billNumber: { type: String, required: true },
     billType: {
       type: String,
-      enum: ["Home", "Client"],
+      enum: ["Home", "Clinic"],
       default: "Home",
       required: true,
     },

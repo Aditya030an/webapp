@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
 
   header: {
     position: "absolute",
-    top: 0,
+    top: 10,
     left: 40,
     right: 40,
     borderBottom: "1 solid #0f5c8e",
@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
   },
 
   logo: {
-    width: 90,
+    width: 130,
   },
 
   footer: {
@@ -73,38 +73,41 @@ const styles = StyleSheet.create({
   },
 });
 
-const PdfTemplate = ({ children }) => {
+const PdfTemplate = ({ children, showHeader = true }) => {
+  console.log("children", children);
+  const pageStyle = {
+    ...styles.page,
+    paddingTop: showHeader ? 110 : 60, // 🔥 key line
+  };
   return (
     <Document>
-      <Page size="A4" style={styles.page} wrap>
+      <Page size="A4" style={pageStyle} wrap>
         {/* Header */}
         <View style={styles.header} fixed>
-          <Image src="/logo.jpeg" style={styles.logo} />
-          <View>
-            <Text style={{ marginBottom: 4 }}>Dr. Mayank Gupta (PT), BPT</Text>
-            <Text style={{ marginBottom: 4 }}>
-              Certified PNF Practitioner (IPNFA – Level 3A)
-            </Text>
-            <Text style={{ marginBottom: 4 }}>
-              Certified in Mulligan Concept Manual Therapy (C.O.M.M.T)
-            </Text>
-            <Text style={{ marginBottom: 4 }}>
-              Certified Pilates Instructor
-            </Text>
-            <Text style={{ marginBottom: 4 }}>
-              Registration No.: SCH-01/DEG2/25326/2014
-            </Text>
-          </View>
+          <Image src="/logo2.jpeg" style={styles.logo} />
+          {showHeader && (
+            <View>
+              <Text style={{ marginBottom: 4 }}>
+                Dr. Mayank Gupta (PT), BPT
+              </Text>
+              <Text style={{ marginBottom: 4 }}>
+                Certified PNF Practitioner (IPNFA – Level 3A)
+              </Text>
+              <Text style={{ marginBottom: 4 }}>
+                Certified in Mulligan Concept Manual Therapy (C.O.M.M.T)
+              </Text>
+              <Text style={{ marginBottom: 4 }}>
+                Certified Pilates Instructor
+              </Text>
+              <Text style={{ marginBottom: 4 }}>
+                Registration No.: SCH-01/DEG2/25326/2014
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Dynamic Content */}
         <View style={styles.content}>{children}</View>
-        {/* <View style={{ marginTop: 30 }}>
-          <Text>Authorized Signature</Text>
-          <Text style={{ marginTop: 25, fontWeight: "bold" }}>
-            Dr. Mayank Gupta (PT)
-          </Text>
-        </View> */}
 
         {/* Signature */}
         <View style={styles.signature} fixed>
@@ -117,7 +120,8 @@ const PdfTemplate = ({ children }) => {
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text>
-          Bhawna Nager, Akhand Param Dham Near NDP'S School khandwa road indore 452020
+            Bhawna Nager, Akhand Param Dham Near NDP'S School khandwa road
+            indore 452020
             {/* Movement Rehab, Near NDPS School, Khandwa Road, Indore 452020 */}
           </Text>
           <Text>+91 6262 666 558 | movementrehab.in@gmail.com</Text>

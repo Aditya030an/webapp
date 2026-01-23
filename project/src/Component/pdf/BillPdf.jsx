@@ -80,7 +80,7 @@ const BillPdf = ({ bill, patient }) => {
     }
   }, [bill]);
   return (
-    <PdfTemplate>
+    <PdfTemplate showHeader={false}>
       {/* ===== Patient Details ===== */}
       <View style={styles.section}>
         <Text style={styles.title}>Patient Details</Text>
@@ -130,6 +130,9 @@ const BillPdf = ({ bill, patient }) => {
         <Text style={styles.title}>Billing Details</Text>
         <Text style={styles.row}>
           <Text style={styles.label}>Bill No:</Text> {bill.billNumber}
+        </Text>
+        <Text style={styles.row}>
+          <Text style={styles.label}>Bill Type:</Text> {bill.billType}
         </Text>
         <Text style={styles.row}>
           <Text style={styles.label}>Date:</Text>{" "}

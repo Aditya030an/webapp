@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
+import InventoryReportPdf from "./pdf/InventoryReportPdf";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 
 const Inventory = () => {
   const [items, setItems] = useState([{ name: "", quantity: 0, unitPrice: 0 }]);
@@ -42,6 +44,8 @@ const Inventory = () => {
   useEffect(() => {
     fetchInventoryData();
   }, []);
+
+  console.log("filteredInventory", filteredInventory);
 
   useEffect(() => {
     if (!selectedMonth && !selectedYear) {
@@ -263,12 +267,23 @@ const Inventory = () => {
             })}
           </select>
 
-          <button
-            onClick={generatePDF}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          <PDFDownloadLink
+            document={
+              <InventoryReportPdf
+                inventory={filteredInventory}
+              />
+            }
+            fileName={`Inventory_Report_${selectedMonth || "All Month"}_${selectedYear || "All Year"}.pdf`}
           >
-            Download PDF
-          </button>
+            {({ loading }) => (
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                disabled={loading}
+              >
+                {loading ? "Preparing PDF..." : "Download PDF"}
+              </button>
+            )}
+          </PDFDownloadLink>
         </div>
 
         <div className="text-right px-6 text-green-700 font-bold text-lg">
@@ -285,13 +300,13 @@ const Inventory = () => {
               Purchase Details
             </h2>
             <p className="text-sm text-gray-600 mb-2">
-              Date: {new Date(order.createdAt).toLocaleDateString()}
+              Date: {new Date(order.createdAt).toLocaleDateString("en-IN")}
             </p>
             <h3 className="font-semibold text-gray-800 mb-1">Items:</h3>
             <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
               {order.items.map((item) => (
                 <li key={item._id}>
-                  {item.name} - {item.quantity} pcs @ ₹{item.unitPrice}
+                  {item.name} - {item.quantity} pcs x ₹{item.unitPrice}
                 </li>
               ))}
             </ul>

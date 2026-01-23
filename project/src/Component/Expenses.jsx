@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import html2pdf from "html2pdf.js";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import ExpenseReportPdf from "../Component/pdf/ExpenseReportPdf.jsx";
 
 
 const Expenses = () => {
@@ -32,7 +34,7 @@ const Expenses = () => {
   const fetchExpensesData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/expenses`
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/expenses`,
       );
       const result = await response.json();
       console.log("Expenses data:", result);
@@ -47,6 +49,8 @@ const Expenses = () => {
   useEffect(() => {
     fetchExpensesData();
   }, []);
+
+  console.log("Expenses data:", expensesData);
 
   const filterExpensesByMonthYear = () => {
     let filtered = expensesData;
@@ -93,7 +97,7 @@ const Expenses = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       const result = await response.json();
@@ -148,7 +152,7 @@ const Expenses = () => {
               ${
                 index === 0
                   ? `<td rowspan="${expense.expenses.length}">${new Date(
-                      expense.date
+                      expense.date,
                     ).toLocaleDateString()}</td>`
                   : ""
               }
@@ -172,7 +176,7 @@ const Expenses = () => {
                   : ""
               }
             </tr>
-          `
+          `,
               )
               .join("");
             return itemRows;
@@ -199,7 +203,6 @@ const Expenses = () => {
   return (
     <div>
       <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-        
         {/* Main Form */}
         <div className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
@@ -285,7 +288,7 @@ const Expenses = () => {
 
           {/* Total */}
           <div className="text-right text-lg font-bold mt-2 mb-6">
-            Total: ${total.toFixed(2)}
+            Total: ₹ {total.toFixed(2)}
           </div>
 
           {/* Action Buttons */}
@@ -303,60 +306,83 @@ const Expenses = () => {
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-600">
-            Select Month
-          </label>
-          <select
-            className="w-full border border-gray-300 p-2 rounded"
-            value={selectedMonth || ""}
-            onChange={(e) =>
-              setSelectedMonth(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">All Months</option>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {new Date(0, i).toLocaleString("default", { month: "long" })}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-600">
-            Select Year
-          </label>
-          <select
-            className="w-full border border-gray-300 p-2 rounded"
-            value={selectedYear || ""}
-            onChange={(e) =>
-              setSelectedYear(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">All Years</option>
-            {Array.from({ length: 5 }, (_, i) => {
-              const year = new Date().getFullYear() - i;
-              return (
-                <option key={year} value={year}>
-                  {year}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Select Month
+            </label>
+            <select
+              className="w-full border border-gray-300 p-2 rounded"
+              value={selectedMonth || ""}
+              onChange={(e) =>
+                setSelectedMonth(e.target.value ? Number(e.target.value) : null)
+              }
+            >
+              <option value="">All Months</option>
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Date(0, i).toLocaleString("default", { month: "long" })}
                 </option>
-              );
-            })}
-          </select>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-600">
+              Select Year
+            </label>
+            <select
+              className="w-full border border-gray-300 p-2 rounded"
+              value={selectedYear || ""}
+              onChange={(e) =>
+                setSelectedYear(e.target.value ? Number(e.target.value) : null)
+              }
+            >
+              <option value="">All Years</option>
+              {Array.from({ length: 5 }, (_, i) => {
+                const year = new Date().getFullYear() - i;
+                return (
+                  <option key={year} value={year}>
+                    {year}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+        <div className="flex items-center justify-between">
+          <PDFDownloadLink
+            document={
+              <ExpenseReportPdf
+                expenses={filteredExpenses}
+                month={
+                  selectedMonth
+                    ? new Date(0, selectedMonth - 1).toLocaleString("default", {
+                        month: "long",
+                      })
+                    : null
+                }
+                year={selectedYear}
+                total={filteredTotal}
+              />
+            }
+            fileName={`Expense_Report_${selectedMonth || "All"}_${selectedYear || "All"}.pdf`}
+          >
+            {({ loading }) => (
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                disabled={loading}
+              >
+                {loading ? "Preparing PDF..." : "Download PDF"}
+              </button>
+            )}
+          </PDFDownloadLink>
+
+          <div className=" text-lg font-bold text-green-700 px-4">
+            Monthly Total: ₹{filteredTotal}
+          </div>
         </div>
       </div>
-
-      <div className="text-right text-lg font-bold text-green-700 px-4">
-        Monthly Total: ₹{filteredTotal}
-      </div>
-
-      <button
-        onClick={generatePDF}
-        className="bg-green-600 text-white px-4 py-2 rounded-lg"
-      >
-        Download PDF
-      </button>
 
       <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredExpenses?.length === 0 ? (
@@ -373,7 +399,7 @@ const Expenses = () => {
                 Category: {expense.category}
               </h2>
               <p className="text-sm text-gray-600 mb-1">
-                Date: {new Date(expense.date).toLocaleDateString()}
+                Date: {new Date(expense.date).toLocaleDateString("en-IN")}
               </p>
               <p className="text-sm text-gray-700 mb-2">
                 <strong>Notes:</strong>{" "}
