@@ -30,7 +30,7 @@ const AuthModal = ({ onClose, onAuthSuccess, setRole }) => {
         body: JSON.stringify(form),
       });
 
-      console.log("data" , data);
+      // console.log("data" , data);
 
       if (data?.token) {
         localStorage.setItem("webapptoken", data?.token);

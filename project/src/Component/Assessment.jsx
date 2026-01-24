@@ -8,7 +8,7 @@ const NeuroPhysioFullForm = () => {
   const patient = location?.state?.patient;
   const patientDetail = location?.state?.patient?.personalDetails;
   const patient_id = location?.state?.patient?._id;
-  console.log("patient inside the neuro", patient);
+  // console.log("patient inside the neuro", patient);
   // console.log("patient details inside the neuro", patientDetail);
   // console.log("patient  inside the neuro", patient_id);
 
@@ -87,7 +87,7 @@ const NeuroPhysioFullForm = () => {
   useEffect(() => {
     const employee = localStorage.getItem("loginEmployeeData");
     const data = JSON.parse(employee);
-    console.log("data", data);
+    // console.log("data", data);
     setFormData((prev) => ({
       ...prev,
       physiotherapistName: data?.personalDetails?.fullName,
@@ -150,7 +150,7 @@ const NeuroPhysioFullForm = () => {
       const allowedKeys = Object.keys(formData);
 
       const filteredData = pickAllowedFields(lastForm, allowedKeys);
-      console.log("filteredData", filteredData);
+      // console.log("filteredData", filteredData);
       setFormData((prev) => ({
         ...prev,
         ...filteredData,
@@ -184,7 +184,7 @@ const NeuroPhysioFullForm = () => {
       });
 
       const result = await response.json();
-      console.log("result , , ,, ,", result);
+      // console.log("result , , ,, ,", result);
       if (result?.success) {
         alert(result?.message);
         setHistory(result?.updatedForm?.history);

@@ -5,10 +5,13 @@ import BillPdf from "../pdf/BillPdf";
 
 const BillSection = ({ billing, patientDetail, attendance }) => {
   const navigate = useNavigate();
-  console.log("patient", patientDetail);
+  // console.log("patient", patientDetail);
+  // console.log("billinq", billing);
 
   const goTo = (path) => {
-    navigate(path, { state: { patient: patientDetail, attendance } });
+    navigate(path, {
+      state: { patient: patientDetail, attendance, previousBills: billing },
+    });
   };
   return (
     <section className="border rounded-lg p-4">
@@ -107,17 +110,33 @@ const BillSection = ({ billing, patientDetail, attendance }) => {
                 {/* Remaining Balance */}
                 <div className="flex items-center justify-between border-t pt-4 mt-4">
                   <span className="text-base font-medium text-gray-700">
-                    Remaining Balance
+                    Balance Pay
                   </span>
                   <span className="text-right font-bold text-green-700">
                     ₹
-                    {(bill?.total - (bill?.advancePayment ?? 0)).toLocaleString(
-                      "en-IN",
-                      {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      }
-                    )}
+                    {bill?.total -
+                      (Number(bill?.advancePayment) + bill?.amountInWallet) <
+                    0
+                      ? 0
+                      : (
+                          bill?.total -
+                          (Number(bill?.advancePayment) + bill?.amountInWallet)
+                        ).toLocaleString("en-IN", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t pt-4 mt-4">
+                  <span className="text-base font-medium text-gray-700">
+                    Remaining Balance In Wallet
+                  </span>
+                  <span className="text-right font-bold text-green-700">
+                    ₹
+                    {bill?.amountInWallet.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
                   </span>
                 </div>
               </div>

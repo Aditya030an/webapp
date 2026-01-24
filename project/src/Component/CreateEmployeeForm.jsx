@@ -113,7 +113,7 @@ const CreateEmployeeForm = ({
 
     //   router -> api/employee/createEmployee
     try {
-      console.log("form data", formData);
+      // console.log("form data", formData);
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/employee/createEmployee`,
         {
@@ -127,7 +127,7 @@ const CreateEmployeeForm = ({
       );
 
       const result = await response.json();
-      console.log("result employee  , , , ", result);
+      // console.log("result employee  , , , ", result);
       if (result?.success) {
         alert(result?.message);
         fetchAllEmployees();
@@ -310,7 +310,7 @@ const CreateEmployeeForm = ({
 
 const Input = ({ label, readOnly, ...props }) => (
   <div>
-    {console.log("props", props)}
+    {/* {console.log("props", props)} */}
     <label className="block text-sm mb-1">
       {label}
       {label !== "Date of Exit" && label !== "Registration No" && (

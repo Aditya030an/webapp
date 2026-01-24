@@ -50,35 +50,15 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderBottomWidth: 1,
   },
-
-  //   signature: {
-  //     marginTop: 40,
-  //     alignItems: "flex-end",
-  //   },
-  //   signature: {
-  //   position: "absolute",
-  //   bottom:0, // just above footer
-  //   right: 40,
-  //   textAlign: "right",
-  //   fontSize: 11,
-  // },
 });
 
 const BillPdf = ({ bill, patient }) => {
   useEffect(() => {
-    if (
-      !bill?.billNumber ||
-      !bill?.billType ||
-      !bill?.customer ||
-      !bill?.date ||
-      !bill?.status ||
-      !bill?.items ||
-      !bill?.total ||
-      !bill?.advancePayment
-    ) {
-      return;
-    }
-  }, [bill]);
+    if (!bill || !patient) return;
+  }, [bill, patient]);
+
+  const dueAmount = Math.max(0, bill.total - bill.advancePayment);
+
   return (
     <PdfTemplate showHeader={false}>
       {/* ===== Patient Details ===== */}
@@ -88,34 +68,42 @@ const BillPdf = ({ bill, patient }) => {
         <View style={styles.grid}>
           <View style={styles.col}>
             <Text style={styles.row}>
-              <Text style={styles.label}>Patient ID:</Text> {patient.patientId}
+              <Text style={styles.label}>Patient ID:</Text>{" "}
+              {patient.patientId}
             </Text>
           </View>
+
           <View style={styles.col}>
             <Text style={styles.row}>
               <Text style={styles.label}>Name:</Text> {patient.name}
             </Text>
           </View>
+
           <View style={styles.col}>
             <Text style={styles.row}>
               <Text style={styles.label}>Age:</Text> {patient.age}
             </Text>
           </View>
+
           <View style={styles.col}>
             <Text style={styles.row}>
               <Text style={styles.label}>Gender:</Text> {patient.gender}
             </Text>
           </View>
+
           <View style={styles.col}>
             <Text style={styles.row}>
-              <Text style={styles.label}>Contact:</Text> {patient.contactNumber}
+              <Text style={styles.label}>Contact:</Text>{" "}
+              {patient.contactNumber}
             </Text>
           </View>
+
           <View style={styles.col}>
             <Text style={styles.row}>
               <Text style={styles.label}>Address:</Text> {patient.address}
             </Text>
           </View>
+
           <View style={{ width: "100%" }}>
             <Text style={styles.row}>
               <Text style={styles.label}>Chief Complaint:</Text>{" "}
@@ -128,16 +116,20 @@ const BillPdf = ({ bill, patient }) => {
       {/* ===== Billing Details ===== */}
       <View style={styles.section}>
         <Text style={styles.title}>Billing Details</Text>
+
         <Text style={styles.row}>
           <Text style={styles.label}>Bill No:</Text> {bill.billNumber}
         </Text>
+
         <Text style={styles.row}>
           <Text style={styles.label}>Bill Type:</Text> {bill.billType}
         </Text>
+
         <Text style={styles.row}>
           <Text style={styles.label}>Date:</Text>{" "}
           {new Date(bill.date).toLocaleDateString("en-GB")}
         </Text>
+
         <Text style={styles.row}>
           <Text style={styles.label}>Payment Mode:</Text> {bill.status}
         </Text>
@@ -157,31 +149,40 @@ const BillPdf = ({ bill, patient }) => {
             <Text style={styles.td}>{item.name}</Text>
             <Text style={styles.td}>{item.qty}</Text>
             <Text style={styles.td}>Rs. {item.price}</Text>
-            <Text style={styles.td}>Rs. {item.qty * item.price}</Text>
+            <Text style={styles.td}>
+              Rs. {item.qty * item.price}
+            </Text>
           </View>
         ))}
       </View>
 
-      {/* ===== Summary ===== */}
+      {/* ===== Payment Summary ===== */}
       <View style={styles.section}>
         <Text style={styles.row}>
-          <Text style={styles.label}>Total:</Text> Rs. {bill.total}
+          <Text style={styles.label}>Total Amount:</Text> Rs. {bill.total}
         </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Advance Paid:</Text> Rs.
-          {bill.advancePayment || 0}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Remaining:</Text> Rs.
-          {bill.total - (bill.advancePayment ?? 0)}
-        </Text>
-      </View>
 
-      {/* ===== Signature ===== */}
-      {/* <View style={styles.signature}>
-        <Text>Authorized Signature</Text>
-        <Text style={{ marginTop: 30 }}>Dr. Mayank Gupta (PT)</Text>
-      </View> */}
+        <Text style={styles.row}>
+          <Text style={styles.label}>Total Advance Amount:</Text> Rs.{" "}
+          {bill.advancePayment + bill.amountInWallet}
+        </Text>
+
+        {/* <Text style={styles.row}>
+          <Text style={styles.label}>Wallet Balance:</Text> Rs.{" "}
+          {bill.amountInWallet}
+        </Text> */}
+
+        <Text style={styles.row}>
+          <Text style={styles.label}>Balance Pay:</Text> Rs. {dueAmount}
+        </Text>
+
+        {bill.amountInWallet > 0 && (
+          <Text style={{ fontSize: 10, marginTop: 6 }}>
+            * Rs. {bill.amountInWallet} has been added to wallet for future
+            bills.
+          </Text>
+        )}
+      </View>
     </PdfTemplate>
   );
 };

@@ -1,137 +1,290 @@
+// import React, { useEffect, useState } from "react";
+// import html2pdf from "html2pdf.js";
+
+// const Total = () => {
+//   const [data, setData] = useState({
+//     income: {
+//       billed: 0,
+//       received: 0,
+//       pending: 0,
+//       wallet: 0,
+//       count: 0,
+//     },
+//     outgoing: {
+//       expenses: 0,
+//       inventory: 0,
+//       rent: 0,
+//       salary: 0,
+//     },
+//   });
+
+//   const [selectedMonth, setSelectedMonth] = useState("");
+//   const [selectedYear, setSelectedYear] = useState("");
+
+//   useEffect(() => {
+//     const fetchReport = async () => {
+//       try {
+//         const [
+//           billRes,
+//           expenseRes,
+//           inventoryRes,
+//           rentRes,
+//           salaryRes,
+//         ] = await Promise.all([
+//           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/report/bill`),
+//           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/report/expenses`),
+//           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/report/inventory`),
+//           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/report/rent`),
+//           fetch(`${import.meta.env.VITE_BACKEND_URL}/api/report/salary`),
+//         ]);
+
+//         const bills = (await billRes.json()).data || [];
+//         const expenses = (await expenseRes.json()).data || [];
+//         const inventory = (await inventoryRes.json()).data || [];
+//         const rent = (await rentRes.json()).data || [];
+//         const salary = (await salaryRes.json()).data || [];
+
+//         const isMatch = (dateStr) => {
+//           const d = new Date(dateStr);
+//           return (
+//             (!selectedMonth || d.getMonth() + 1 === +selectedMonth) &&
+//             (!selectedYear || d.getFullYear() === +selectedYear)
+//           );
+//         };
+
+//         const billFiltered = bills.filter((b) => isMatch(b.date));
+
+//         const income = billFiltered.reduce(
+//           (acc, b) => {
+//             acc.billed += b.total;
+//             acc.received += b.advancePayment || 0;
+//             acc.wallet += b.amountInWallet || 0;
+//             acc.pending += Math.max(0, b.total - (b.advancePayment || 0));
+//             acc.count += 1;
+//             return acc;
+//           },
+//           { billed: 0, received: 0, pending: 0, wallet: 0, count: 0 }
+//         );
+
+//         const outgoing = {
+//           expenses: expenses.filter(e => isMatch(e.date))
+//             .reduce((s, e) => s + e.total, 0),
+
+//           inventory: inventory.filter(i => isMatch(i.createdAt))
+//             .reduce((s, i) => s + i.total, 0),
+
+//           rent: rent.filter(r => isMatch(r.dueDate))
+//             .reduce((s, r) => s + r.amount, 0),
+
+//           salary: salary.reduce((sum, s) => {
+//             const matched = s.employees.filter(e => {
+//               const [y, m] = e.month.split("-");
+//               return (
+//                 (!selectedMonth || +m === +selectedMonth) &&
+//                 (!selectedYear || +y === +selectedYear)
+//               );
+//             });
+//             return sum + matched.reduce((x, e) => x + e.salary, 0);
+//           }, 0),
+//         };
+
+//         setData({ income, outgoing });
+//       } catch (err) {
+//         console.error("Report Error:", err);
+//       }
+//     };
+
+//     fetchReport();
+//   }, [selectedMonth, selectedYear]);
+
+//   const totalOutgoing =
+//     data.outgoing.expenses +
+//     data.outgoing.inventory +
+//     data.outgoing.rent +
+//     data.outgoing.salary;
+
+//   const netBalance = data.income.received - totalOutgoing;
+
+//   const generatePDF = () => {
+//     const content = `
+//       <div style="font-family: Arial; padding:20px">
+//         <h2 style="text-align:center">Financial Summary</h2>
+
+//         <h3>Income</h3>
+//         <p>Total Billed: ₹${data.income.billed}</p>
+//         <p>Received: ₹${data.income.received}</p>
+//         <p>Pending: ₹${data.income.pending}</p>
+//         <p>Wallet: ₹${data.income.wallet}</p>
+
+//         <h3>Outgoing</h3>
+//         <p>Expenses: ₹${data.outgoing.expenses}</p>
+//         <p>Inventory: ₹${data.outgoing.inventory}</p>
+//         <p>Rent: ₹${data.outgoing.rent}</p>
+//         <p>Salary: ₹${data.outgoing.salary}</p>
+
+//         <h3>Summary</h3>
+//         <p>Total Outgoing: ₹${totalOutgoing}</p>
+//         <p><strong>Net Balance: ₹${netBalance}</strong></p>
+//       </div>
+//     `;
+//     html2pdf().from(content).save("Financial_Report.pdf");
+//   };
+
+//   return (
+//     <div className="min-h-screen bg-gray-100 p-6">
+//       {/* Filters */}
+//       <div className="flex gap-4 mb-6">
+//         <select className="border p-2" onChange={e => setSelectedMonth(e.target.value)}>
+//           <option value="">All Months</option>
+//           {[...Array(12)].map((_, i) => (
+//             <option key={i} value={i + 1}>
+//               {new Date(0, i).toLocaleString("default", { month: "long" })}
+//             </option>
+//           ))}
+//         </select>
+
+//         <select className="border p-2" onChange={e => setSelectedYear(e.target.value)}>
+//           <option value="">All Years</option>
+//           {[...Array(5)].map((_, i) => {
+//             const y = new Date().getFullYear() - i;
+//             return <option key={y} value={y}>{y}</option>;
+//           })}
+//         </select>
+
+//         <button
+//           onClick={generatePDF}
+//           className="bg-green-600 text-white px-4 py-2 rounded"
+//         >
+//           Download PDF
+//         </button>
+//       </div>
+
+//       {/* Income */}
+//       <div className="bg-white p-6 rounded-xl shadow mb-6">
+//         <h2 className="text-xl font-bold text-green-700 mb-4">Income</h2>
+//         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+//           <Stat label="Billed" value={data.income.billed} />
+//           <Stat label="Received" value={data.income.received} />
+//           <Stat label="Pending" value={data.income.pending} />
+//           <Stat label="Wallet" value={data.income.wallet} />
+//         </div>
+//       </div>
+
+//       {/* Outgoing */}
+//       <div className="bg-white p-6 rounded-xl shadow mb-6">
+//         <h2 className="text-xl font-bold text-red-700 mb-4">Outgoing</h2>
+//         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+//           <Stat label="Expenses" value={data.outgoing.expenses} />
+//           <Stat label="Inventory" value={data.outgoing.inventory} />
+//           <Stat label="Rent" value={data.outgoing.rent} />
+//           <Stat label="Salary" value={data.outgoing.salary} />
+//         </div>
+//       </div>
+
+//       {/* Summary */}
+//       <div className="bg-white p-6 rounded-xl shadow">
+//         <h2 className="text-xl font-bold mb-2">Net Summary</h2>
+//         <p>Total Outgoing: ₹{totalOutgoing}</p>
+//         <p className={`text-2xl font-bold ${netBalance >= 0 ? "text-green-600" : "text-red-600"}`}>
+//           Net Balance: ₹{netBalance}
+//         </p>
+//       </div>
+//     </div>
+//   );
+// };
+
+// const Stat = ({ label, value }) => (
+//   <div className="bg-gray-50 p-4 rounded">
+//     <p className="text-sm text-gray-500">{label}</p>
+//     <p className="text-xl font-bold">₹{value}</p>
+//   </div>
+// );
+
+// export default Total;
+
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import TotalReportPdf from "../Component/pdf/TotalReportPdf.jsx";
 
 const Total = () => {
-  const [categoryTotal, setCategoryTotal] = useState({});
+  const [data, setData] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
   useEffect(() => {
-    const fetchCategoryTotal = async () => {
-      try {
-        const billResponse = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/report/bill`,
-        );
-        const expensesResponse = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/report/expenses`,
-        );
-        const inventoryResponse = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/report/inventory`,
-        );
-        const rentResponse = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/report/rent`,
-        );
-        const salaryResponse = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/report/salary`,
-        );
+    const fetchData = async () => {
+      const urls = ["bill", "expenses", "inventory", "rent", "salary"].map(
+        (type) => `${import.meta.env.VITE_BACKEND_URL}/api/report/${type}`,
+      );
 
-        const billData = await billResponse.json();
-        const expensesData = await expensesResponse.json();
-        const inventoryData = await inventoryResponse.json();
-        const rentData = await rentResponse.json();
-        const salaryData = await salaryResponse.json();
+      const responses = await Promise.all(urls.map((u) => fetch(u)));
+      const [billData, expensesData, inventoryData, rentData, salaryData] =
+        await Promise.all(responses.map((r) => r.json()));
 
-        const isMatch = (dateStr) => {
-          const date = new Date(dateStr);
-          const monthMatch = selectedMonth
-            ? date.getMonth() + 1 === Number(selectedMonth)
-            : true;
-          const yearMatch = selectedYear
-            ? date.getFullYear() === Number(selectedYear)
-            : true;
-          return monthMatch && yearMatch;
-        };
-
-        const billFiltered = billData.data.filter((b) => isMatch(b.date));
-        const expensesFiltered = expensesData.data.filter((e) =>
-          isMatch(e.date),
+      const isMatch = (dateStr) => {
+        const d = new Date(dateStr);
+        return (
+          (!selectedMonth || d.getMonth() + 1 === Number(selectedMonth)) &&
+          (!selectedYear || d.getFullYear() === Number(selectedYear))
         );
-        const inventoryFiltered = inventoryData.data.filter((i) =>
-          isMatch(i.createdAt),
-        );
-        const rentFiltered = rentData.data.filter((r) => isMatch(r.dueDate));
-        const salaryFiltered = salaryData.data.filter((s) =>
-          s.employees.some((e) => {
-            const [year, month] = e.month.split("-");
-            const monthMatch = selectedMonth
-              ? Number(month) === Number(selectedMonth)
-              : true;
-            const yearMatch = selectedYear
-              ? Number(year) === Number(selectedYear)
-              : true;
-            return monthMatch && yearMatch;
-          }),
-        );
+      };
 
-        const totals = {
-          billTotal: billFiltered.reduce((sum, b) => sum + b.total, 0),
-          totalBill: billFiltered.length,
-          expensesTotal: expensesFiltered.reduce((sum, e) => sum + e.total, 0),
-          totalExpenses: expensesFiltered.length,
-          inventoryTotal: inventoryFiltered.reduce(
-            (sum, i) => sum + i.total,
-            0,
-          ),
-          totalInventory: inventoryFiltered.length,
-          rentTotal: rentFiltered.reduce((sum, r) => sum + r.amount, 0),
-          totalRent: rentFiltered.length,
-          salaryTotal: salaryFiltered.reduce(
-            (sum, s) => sum + s.totalSalary,
-            0,
-          ),
-          totalSalary: salaryFiltered.length,
-        };
+      /* ===== INCOME ===== */
+      const bills = billData.data.filter((b) => isMatch(b.date));
 
-        setCategoryTotal(totals);
-      } catch (error) {
-        console.error("Error fetching category total:", error);
-      }
+      const billed = bills.reduce((s, b) => s + b.total, 0);
+      const received = bills.reduce(
+        (s, b) => s + Math.min(b.total, b.advancePayment || 0),
+        0,
+      );
+      const pending = billed - received;
+      const wallet = bills.reduce((s, b) => s + (b.amountInWallet || 0), 0);
+
+      /* ===== OUTGOING ===== */
+      const expenses = expensesData.data
+        .filter((e) => isMatch(e.date))
+        .reduce((s, e) => s + e.total, 0);
+
+      const inventory = inventoryData.data
+        .filter((i) => isMatch(i.createdAt))
+        .reduce((s, i) => s + i.total, 0);
+
+      const rent = rentData.data
+        .filter((r) => isMatch(r.dueDate))
+        .reduce((s, r) => s + r.amount, 0);
+
+      const salary = salaryData.data.reduce((s, sal) => s + sal.totalSalary, 0);
+
+      setData({
+        income: { billed, received, pending, wallet },
+        outgoing: { expenses, inventory, rent, salary },
+      });
     };
 
-    fetchCategoryTotal();
+    fetchData();
   }, [selectedMonth, selectedYear]);
 
+  if (!data) return <p className="p-6">Loading report...</p>;
+
+  const totalOutgoing =
+    data.outgoing.expenses +
+    data.outgoing.inventory +
+    data.outgoing.rent +
+    data.outgoing.salary;
+
+  const netBalance = data.income.received - totalOutgoing;
+
   const generatePDF = () => {
-    const monthName = selectedMonth
-      ? new Date(0, selectedMonth - 1).toLocaleString("default", {
-          month: "long",
-        })
-      : "All Months";
-    const year = selectedYear || "All Years";
-    const total =
-      categoryTotal?.billTotal +
-      categoryTotal?.expensesTotal +
-      categoryTotal?.inventoryTotal +
-      categoryTotal?.rentTotal +
-      categoryTotal?.salaryTotal;
-
-    const content = `
-      <div style="font-family: Arial; padding: 20px;">
-        <h2 style="text-align: center;">Overall Report</h2>
-        <p><strong>Month:</strong> ${monthName}</p>
-        <p><strong>Year:</strong> ${year}</p>
-        <p><strong>Total:</strong> ₹${total}</p>
-        <table border="1" cellspacing="0" cellpadding="8" width="100%" style="border-collapse: collapse; font-size: 12px; margin-top: 20px;">
-          <thead style="background: #f0f0f0;">
-            <tr><th>Category</th><th>Count</th><th>Total</th></tr>
-          </thead>
-          <tbody>
-            <tr><td>Bills</td><td>${categoryTotal?.totalBill}</td><td>₹${categoryTotal?.billTotal}</td></tr>
-            <tr><td>Expenses</td><td>${categoryTotal?.totalExpenses}</td><td>₹${categoryTotal?.expensesTotal}</td></tr>
-            <tr><td>Inventory</td><td>${categoryTotal?.totalInventory}</td><td>₹${categoryTotal?.inventoryTotal}</td></tr>
-            <tr><td>Rent</td><td>${categoryTotal?.totalRent}</td><td>₹${categoryTotal?.rentTotal}</td></tr>
-            <tr><td>Salary</td><td>${categoryTotal?.totalSalary}</td><td>₹${categoryTotal?.salaryTotal}</td></tr>
-          </tbody>
-        </table>
-      </div>`;
-
-    html2pdf().from(content).save("Overall_Report.pdf");
+    html2pdf()
+      .from(document.getElementById("report"))
+      .save("Financial_Report.pdf");
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-      <div className="flex gap-4 px-6 mb-4">
+    <div className="min-h-screen bg-gray-100 p-6">
+      {/* ===== FILTERS ===== */}
+      <div className="flex gap-4 mb-6">
         <select
           className="border p-2 rounded"
           value={selectedMonth}
@@ -144,6 +297,7 @@ const Total = () => {
             </option>
           ))}
         </select>
+
         <select
           className="border p-2 rounded"
           value={selectedYear}
@@ -159,85 +313,137 @@ const Total = () => {
             );
           })}
         </select>
-        <button
-          onClick={generatePDF}
-          className="bg-green-600 text-white px-4 py-2 rounded"
+
+        <PDFDownloadLink
+          document={
+            <TotalReportPdf
+              data={data}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          }
+          // fileName="Financial_Report.pdf"
+          fileName={`Financial_Report_${selectedMonth || "All Month"}_${selectedYear || "All Year"}.pdf`}
         >
-          Download PDF
-        </button>
+          {({ loading }) => (
+            <button className="bg-green-600 text-white px-4 py-2 rounded">
+              {loading ? "Generating PDF..." : "Download PDF"}
+            </button>
+          )}
+        </PDFDownloadLink>
       </div>
 
-      <div className="pt-10 px-6 pb-10">
-        <div className="max-w-5xl mx-auto bg-white p-8 rounded-xl shadow-md">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Total</h2>
-            <span className="text-xl font-semibold text-blue-600">
-              ₹
-              {categoryTotal?.billTotal +
-                categoryTotal?.expensesTotal +
-                categoryTotal?.inventoryTotal +
-                categoryTotal?.rentTotal +
-                categoryTotal?.salaryTotal}
-            </span>
-          </div>
+      {/* ===== REPORT ===== */}
+      <div id="report" className="space-y-8">
+        {/* ===== FLOW ===== */}
+        <Section title="Financial Flow Overview">
+          <Grid>
+            <FlowCard title="Billed" value={data.income.billed} color="blue" />
+            <FlowCard
+              title="Received"
+              value={data.income.received}
+              color="green"
+            />
+            <FlowCard title="Spent" value={totalOutgoing} color="red" />
+            <FlowCard
+              title="Net Balance"
+              value={netBalance}
+              color={netBalance >= 0 ? "green" : "red"}
+            />
+          </Grid>
+        </Section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-blue-700">Bills</h3>
-              <p className="text-xl font-bold text-blue-900">
-                ₹{categoryTotal?.billTotal}
-              </p>
-              <p className="text-sm text-gray-500">
-                Total Bills: {categoryTotal?.totalBill}
-              </p>
-            </div>
+        {/* ===== INCOME ===== */}
+        <Section title="Income Breakdown">
+          <Grid>
+            <Stat label="Total Billed" value={data.income.billed} />
+            <Stat label="Received" value={data.income.received} />
+            <Stat label="Pending" value={data.income.pending} />
+            <Stat label="Wallet" value={data.income.wallet} />
+          </Grid>
+        </Section>
 
-            <div className="bg-red-50 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-red-700">Expenses</h3>
-              <p className="text-xl font-bold text-red-900">
-                ₹{categoryTotal?.expensesTotal}
-              </p>
-              <p className="text-sm text-gray-500">
-                Total Expenses: {categoryTotal?.totalExpenses}
-              </p>
-            </div>
+        {/* ===== OUTGOING ===== */}
+        <Section title="Expense Breakdown">
+          <Grid>
+            <Stat label="Expenses" value={data.outgoing.expenses} />
+            <Stat label="Inventory" value={data.outgoing.inventory} />
+            <Stat label="Rent" value={data.outgoing.rent} />
+            <Stat label="Salary" value={data.outgoing.salary} />
+          </Grid>
+        </Section>
 
-            <div className="bg-green-50 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-green-700">
-                Inventory
-              </h3>
-              <p className="text-xl font-bold text-green-900">
-                ₹{categoryTotal?.inventoryTotal}
-              </p>
-              <p className="text-sm text-gray-500">
-                Total Inventory: {categoryTotal?.totalInventory}
-              </p>
-            </div>
+        {/* INCOME */}
+        <Section title="Income Calculation">
+          <CalcLine text={`Total Billed = ₹${data.income.billed}`} />
+          <CalcLine text={`Received = ₹${data.income.received}`} />
+          <CalcLine
+            text={`Pending = ₹${data.income.billed} − ₹${data.income.received} = ₹${data.income.pending}`}
+          />
+          <CalcLine text={`Wallet Balance = ₹${data.income.wallet}`} />
+        </Section>
 
-            <div className="bg-yellow-50 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-yellow-700">Rent</h3>
-              <p className="text-xl font-bold text-yellow-900">
-                ₹{categoryTotal?.rentTotal}
-              </p>
-              <p className="text-sm text-gray-500">
-                Total Rent: {categoryTotal?.totalRent}
-              </p>
-            </div>
+        {/* EXPENSE */}
+        <Section title="Expense Calculation">
+          <CalcLine text={`Expenses = ₹${data.outgoing.expenses}`} />
+          <CalcLine text={`Inventory = ₹${data.outgoing.inventory}`} />
+          <CalcLine text={`Rent = ₹${data.outgoing.rent}`} />
+          <CalcLine text={`Salary = ₹${data.outgoing.salary}`} />
+          <CalcLine bold text={`Total Outgoing = ₹${totalOutgoing}`} />
+        </Section>
 
-            <div className="bg-purple-50 p-6 rounded-lg shadow-sm">
-              <h3 className="text-lg font-semibold text-purple-700">Salary</h3>
-              <p className="text-xl font-bold text-purple-900">
-                ₹{categoryTotal?.salaryTotal}
-              </p>
-              <p className="text-sm text-gray-500">
-                Total Salary: {categoryTotal?.totalSalary}
-              </p>
-            </div>
-          </div>
+        {/* ===== FINAL ===== */}
+        <div
+          className={`bg-white p-8 rounded-xl shadow border-l-8 ${
+            netBalance >= 0 ? "border-green-500" : "border-red-500"
+          }`}
+        >
+          <h2 className="text-2xl font-bold mb-2">Final Result</h2>
+          <p className="text-gray-600 mb-4">
+            Based on received payments and total expenses
+          </p>
+          <p
+            className={`text-3xl font-bold ${
+              netBalance >= 0 ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {netBalance >= 0 ? "PROFIT" : "LOSS"} : ₹{Math.abs(netBalance)}
+          </p>
         </div>
       </div>
     </div>
   );
 };
 
+/* ===== SMALL REUSABLE COMPONENTS ===== */
+
+const Section = ({ title, children }) => (
+  <div className="bg-white p-6 rounded-xl shadow">
+    <h2 className="text-xl font-bold mb-4">{title}</h2>
+    {children}
+  </div>
+);
+
+const Grid = ({ children }) => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6">{children}</div>
+);
+
+const Stat = ({ label, value }) => (
+  <div className="bg-gray-50 p-4 rounded-lg">
+    <p className="text-gray-600 text-sm">{label}</p>
+    <p className="text-xl font-bold">₹{value}</p>
+  </div>
+);
+
+const FlowCard = ({ title, value, color }) => (
+  <div className={`bg-${color}-50 p-6 rounded-lg text-center`}>
+    <p className={`text-${color}-700 font-semibold`}>{title}</p>
+    <p className={`text-${color}-900 text-2xl font-bold`}>₹{value}</p>
+  </div>
+);
+
 export default Total;
+
+const CalcLine = ({ text, bold }) => (
+  <p className={`text-gray-700 ${bold ? "font-bold" : ""}`}>{text}</p>
+);

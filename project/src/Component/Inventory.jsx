@@ -45,7 +45,7 @@ const Inventory = () => {
     fetchInventoryData();
   }, []);
 
-  console.log("filteredInventory", filteredInventory);
+  // console.log("filteredInventory", filteredInventory);
 
   useEffect(() => {
     if (!selectedMonth && !selectedYear) {

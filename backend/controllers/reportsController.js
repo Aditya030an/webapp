@@ -24,9 +24,21 @@ const createBill = async (req, res) => {
       });
     }
 
+    const paidAmount =
+      Number(formData.advancePayment) + Number(formData.amountInWallet);
+
+    const remainingBalance =
+      paidAmount > Number(formData.total)
+        ? paidAmount - Number(formData.total)
+        : 0;
+    console.log("remainingBalance", remainingBalance);
+
     const newBill = await billModel.create({
       patientId,
       ...formData,
+      amountInWallet: remainingBalance,
+      advancePayment:
+        Number(formData.advancePayment) + Number(formData.amountInWallet),
     });
 
     const updatedPatient = await Patient.findByIdAndUpdate(
@@ -36,7 +48,7 @@ const createBill = async (req, res) => {
           billing: newBill._id,
         },
       },
-      { new: true }
+      { new: true },
     );
     res.status(201).json({
       success: true,
@@ -67,6 +79,25 @@ const getBill = async (req, res) => {
     res.status(400).json({
       success: false,
       message: "Failed to retrieve bills",
+      error: err.message,
+    });
+  }
+};
+
+const deleteBill = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const bill = await billModel.findByIdAndDelete(id);
+    res.status(200).json({
+      success: true,
+      message: "Bill deleted successfully",
+      data: bill,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(400).json({
+      success: false,
+      message: "Failed to delete bill",
       error: err.message,
     });
   }

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
-
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import RentReportPdf from "../Component/pdf/RentReportPdf.jsx";
 
 const Rent = () => {
   const [propertyName, setPropertyName] = useState("");
@@ -20,7 +21,7 @@ const Rent = () => {
   const fetchRentData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/rent`
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/rent`,
       );
       const result = await response.json();
       if (result.success === true) {
@@ -53,7 +54,7 @@ const Rent = () => {
 
   const filteredTotal = filteredData.reduce(
     (sum, item) => sum + item.amount,
-    0
+    0,
   );
   const paidTotal = filteredData
     .filter((item) => item.status === "Paid")
@@ -75,7 +76,7 @@ const Rent = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-        }
+        },
       );
       const result = await response.json();
       alert(result.message);
@@ -132,7 +133,7 @@ const Rent = () => {
                   <td>₹${item.amount}</td>
                   <td>${item.notes || ""}</td>
                 </tr>
-              `
+              `,
               )
               .join("")}
           </tbody>
@@ -154,97 +155,115 @@ const Rent = () => {
   };
 
   return (
-    <div>
-      <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
+    <div className="min-h-screen bg-gray-50 px-4 py-6">
+      {/* Page Container */}
+      <div className="max-w-6xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <h1 className="text-2xl font-bold text-gray-800">Rent Management</h1>
 
-        {/* Main Card */}
-        <div className="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
+          <PDFDownloadLink
+            document={
+              <RentReportPdf
+                rents={filteredData}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                selectedStatus={selectedStatus}
+                totals={{
+                  total: filteredTotal,
+                  paid: paidTotal,
+                  unpaid: unpaidTotal,
+                  pending: pendingTotal,
+                }}
+              />
+            }
+            fileName={`Rent_Report_${selectedMonth || "All"}_${
+              selectedYear || "Years"
+            }.pdf`}
+          >
+            {({ loading }) => (
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                disabled={loading}
+              >
+                {loading ? "Preparing PDF..." : "Download PDF"}
+              </button>
+            )}
+          </PDFDownloadLink>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-xl shadow p-6">
+          <h2 className="text-lg font-semibold mb-4 text-gray-700">
             Record Rent Payment
           </h2>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="text-gray-500 block mb-1">Property Name</label>
-              <input
-                type="text"
-                value={propertyName}
-                onChange={(e) => setPropertyName(e.target.value)}
-                placeholder="e.g. Clinic Building"
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="text-gray-500 block mb-1">Month</label>
-              <input
-                type="month"
-                value={month}
-                onChange={(e) => setMonth(e.target.value)}
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="text-gray-500 block mb-1">Amount</label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
-                placeholder="$0.00"
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="text-gray-500 block mb-1">Due Date</label>
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-gray-500 block mb-1">Status</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="w-full border border-gray-300 p-2 rounded"
-              >
-                <option value="Paid">Paid</option>
-                <option value="Unpaid">Unpaid</option>
-                <option value="Pending">Pending</option>
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="text-gray-500 block mb-1">Notes</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Optional remarks..."
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <input
+              type="text"
+              placeholder="Property Name"
+              value={propertyName}
+              onChange={(e) => setPropertyName(e.target.value)}
+              className="input"
+            />
+
+            <input
+              type="month"
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="input"
+            />
+
+            <input
+              type="number"
+              placeholder="Amount"
+              min={0}
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="input"
+            />
+
+            <input
+              type="date"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+              className="input"
+            />
+
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="input md:col-span-2"
+            >
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Pending">Pending</option>
+            </select>
+
+            <textarea
+              placeholder="Notes (optional)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="input md:col-span-2"
+            />
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end mt-4">
             <button
               onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
             >
-              Save
-            </button>
-            <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-              Print
+              Save Rent
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-4 p-6 mb-4">
+        <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-3 items-center">
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="border p-2 rounded"
+            className="input w-full sm:w-auto"
           >
             <option value="">All Months</option>
             {Array.from({ length: 12 }, (_, i) => (
@@ -257,7 +276,7 @@ const Rent = () => {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
-            className="border p-2 rounded"
+            className="input w-full sm:w-auto"
           >
             <option value="">All Years</option>
             {[2023, 2024, 2025, 2026].map((year) => (
@@ -270,67 +289,70 @@ const Rent = () => {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="border p-2 rounded"
+            className="input w-full sm:w-auto"
           >
             <option value="">All Status</option>
             <option value="Paid">Paid</option>
             <option value="Unpaid">Unpaid</option>
             <option value="Pending">Pending</option>
           </select>
-
-          <button
-            onClick={generatePDF}
-            className="ml-auto bg-green-500 text-white px-4 py-2 rounded-lg"
-          >
-            Download PDF
-          </button>
         </div>
 
-        <div className="text-right px-6 text-lg font-bold text-blue-800 mb-4">
-          Total: ₹{filteredTotal} | Paid: ₹{paidTotal} | Unpaid: ₹{unpaidTotal}{" "}
-          | Pending: ₹{pendingTotal}
+        {/* Totals */}
+        <div className="bg-white rounded-xl shadow p-4 text-sm md:text-base font-semibold text-gray-700 flex flex-wrap gap-4 justify-between">
+          <span>Total: ₹{filteredTotal}</span>
+          <span className="text-green-600">Paid: ₹{paidTotal}</span>
+          <span className="text-red-600">Unpaid: ₹{unpaidTotal}</span>
+          <span className="text-yellow-600">Pending: ₹{pendingTotal}</span>
         </div>
 
-        {/* Rent Data */}
-        <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Rent Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredData.length === 0 ? (
-            <p className="text-center text-gray-500">No data found.</p>
-          ):(
-          filteredData.map((item) => (
-            <div
-              key={item._id}
-              className="bg-white border border-gray-200 rounded-xl shadow p-4"
-            >
-              <h2 className="text-lg font-semibold text-purple-600">
-                Property Rent
-              </h2>
-              <p className="text-sm text-gray-600">
-                Property: {item.propertyName}
-              </p>
-              <p className="text-sm text-gray-600">Month: {item.month}</p>
-              <p className="text-sm text-gray-600">
-                Due: {new Date(item.dueDate).toLocaleDateString()}
-              </p>
-              <p className="text-sm">
-                Status:{" "}
-                <span
-                  className={`font-bold ${
-                    item.status === "Unpaid"
-                      ? "text-red-600"
-                      : item.status === "Pending"
-                      ? "text-yellow-600"
-                      : "text-green-600"
-                  }`}
-                >
-                  {item.status}
-                </span>
-              </p>
-              <p className="text-sm text-gray-700 mb-2">Notes: {item.notes}</p>
-              <div className="text-right font-bold text-indigo-700">
-                Amount: ₹{item.amount}
+            <p className="text-center text-gray-500 col-span-full">
+              No rent data found
+            </p>
+          ) : (
+            filteredData.map((item) => (
+              <div
+                key={item._id}
+                className="bg-white rounded-xl shadow p-4 space-y-1"
+              >
+                <h3 className="font-semibold text-indigo-600">
+                  {item.propertyName}
+                </h3>
+
+                <p className="text-sm text-gray-600">Month: {item.month}</p>
+
+                <p className="text-sm text-gray-600">
+                  Due: {new Date(item.dueDate).toLocaleDateString()}
+                </p>
+
+                <p className="text-sm">
+                  Status:{" "}
+                  <span
+                    className={`font-semibold ${
+                      item.status === "Paid"
+                        ? "text-green-600"
+                        : item.status === "Pending"
+                          ? "text-yellow-600"
+                          : "text-red-600"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </p>
+
+                {item.notes && (
+                  <p className="text-sm text-gray-500">Notes: {item.notes}</p>
+                )}
+
+                <div className="text-right font-bold text-gray-800 pt-2">
+                  ₹{item.amount}
+                </div>
               </div>
-            </div>
-          )))}
+            ))
+          )}
         </div>
       </div>
     </div>

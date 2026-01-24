@@ -22,7 +22,7 @@ const AssessmentSection = ({ assessment, patientDetail }) => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [openModal, setOpenModal] = useState(false);
 
-  console.log("assessment", assessment);
+  // console.log("assessment", assessment);
 
   const goTo = (path) => {
     navigate(path, { state: { patient: patientDetail } });

@@ -88,7 +88,7 @@ export default function AttendancePage() {
         }
       );
       const result = await res.json();
-      console.log("updates employee", result);
+      // console.log("updates employee", result);
       if (!result?.success) {
         alert("Failed to update attendance: " + result?.message);
       } else {
@@ -194,13 +194,13 @@ const handlePrint = () => {
 };
 
 
-  console.log("all employ", employees);
-console.log("attendence" , attendance);
+//   console.log("all employ", employees);
+// console.log("attendence" , attendance);
 
   employees.forEach((emp) => {
     console.log(`Name: ${emp?.name}`);
     const attendance = emp?.attendance;
-    console.log("Attendance:" , attendance);
+    // console.log("Attendance:" , attendance);
     if (attendance && Object.keys(attendance).length > 0) {
       for (const month in attendance) {
         console.log(`  Month: ${month}`);
@@ -313,7 +313,7 @@ console.log("attendence" , attendance);
                   const empId = emp?._id || emp?.id;
                   const status =
                     attendance[empId]?.[currentMonth]?.[date] || "";
-                  console.log("statues", status);
+                  // console.log("statues", status);
                   return (
                     <tr key={empId}>
                       <td>{emp?.name}</td>

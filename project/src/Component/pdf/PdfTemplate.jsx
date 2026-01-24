@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
 });
 
 const PdfTemplate = ({ children, showHeader = true }) => {
-  console.log("children", children);
+  // console.log("children", children);
   const pageStyle = {
     ...styles.page,
     paddingTop: showHeader ? 110 : 60, // 🔥 key line

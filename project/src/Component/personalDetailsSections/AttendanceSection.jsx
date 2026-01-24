@@ -5,7 +5,7 @@ import PdfAssessmentContent from "../pdf/PdfAssessmentContent";
 import PdfAttendanceContent from "../pdf/PdfAttendanceContent";
 
 const AttendanceSection = ({ attendance, patientDetail }) => {
-  console.log("att", attendance);
+  // console.log("att", attendance);
   const currentDate = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(currentDate);
   const [status, setStatus] = useState("Present");

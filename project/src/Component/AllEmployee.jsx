@@ -17,21 +17,21 @@ const AllEmployee = () => {
       );
 
       const result = await response.json();
-      console.log("Employee data:", result);
+      // console.log("Employee data:", result);
 
       if (result.success && result.employees.length > 0) {
         setAllEmployeeData(result.employees);
 
         // ⚠️ Make sure employees are sorted (latest first)
         const lastEmployee = result.employees[0];
-        console.log("last employee", lastEmployee);
+        // console.log("last employee", lastEmployee);
         const lastEmployeeNumber = lastEmployee?.personalDetails?.employeeId;
 
-        console.log("Last employee number:", lastEmployeeNumber);
+        // console.log("Last employee number:", lastEmployeeNumber);
 
         // ✅ Correct regex
         const match = lastEmployeeNumber?.match(/^(.+)-(\d+)$/);
-        console.log("match:", match);
+        // console.log("match:", match);
 
         if (match) {
           const prefix = match[1]; // MR-EMP

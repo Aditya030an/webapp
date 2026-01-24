@@ -60,7 +60,7 @@ const EmployeeDetails = () => {
     if (id) fetchData();
   }, [id]);
 
-  console.log("employee", employeeDetail);
+  // console.log("employee", employeeDetail);
 
   const personal = employeeDetail?.personalDetails;
   const patients = employeeDetail?.patientLook?.patientId || [];

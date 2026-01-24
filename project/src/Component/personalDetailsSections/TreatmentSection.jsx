@@ -57,7 +57,7 @@ const TreatmentSection = ({ treatment, patientDetail }) => {
         title={`${activeTab} Assessment`}
         assessmentType={activeTab}
         onDownloadPdf={() => {
-          console.log("Download PDF for", activeTab, selectedRecord);
+          // console.log("Download PDF for", activeTab, selectedRecord);
         }}
       />
     </section>

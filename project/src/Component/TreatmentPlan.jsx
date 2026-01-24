@@ -11,7 +11,7 @@ const TreatmentPlan = () => {
   const patientDetail = location?.state?.patient?.personalDetails;
   const patient_id = location?.state?.patient?._id;
 
-  console.log("patient inside the treatment", patient);
+  // console.log("patient inside the treatment", patient);
 
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -47,7 +47,7 @@ const TreatmentPlan = () => {
 
   useEffect(() => {
     const forms = patient?.treatment;
-    console.log("forms", forms);
+    // console.log("forms", forms);
     if (forms?.length) {
       setFormData((prev) => ({
         ...prev, 
@@ -58,7 +58,7 @@ const TreatmentPlan = () => {
     setActiveRecords([...forms].reverse());
   }, [patient]);
 
-  console.log("formData", formData);
+  // console.log("formData", formData);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,7 +82,7 @@ const TreatmentPlan = () => {
         }
       );
       const result = await response.json();
-      console.log("result create ", result);
+      // console.log("result create ", result);
       if (result?.success) {
         alert(result?.message);
         setFormData({ exercises: "", progressionStrategy: "" }); // Reset

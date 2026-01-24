@@ -5,7 +5,7 @@ import PdfAssessmentContent from "../pdf/PdfAssessmentContent";
 import PdfAttendanceContent from "../pdf/PdfAttendanceContent";
 
 const AttendanceSection = ({ attendance, personalDetails, id }) => {
-  console.log("att", attendance);
+  // console.log("att", attendance);
   const currentDate = new Date().toISOString().split("T")[0];
   const [date, setDate] = useState(currentDate);
   const [status, setStatus] = useState("Present");
@@ -36,7 +36,7 @@ const AttendanceSection = ({ attendance, personalDetails, id }) => {
       );
 
       const result = await res.json();
-      console.log("result", result);
+      // console.log("result", result);
       if (result.success) {
         alert("Attendance added");
         window.location.reload(); // or refetch patient

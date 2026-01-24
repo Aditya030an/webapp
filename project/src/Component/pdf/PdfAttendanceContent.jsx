@@ -67,8 +67,8 @@ const styles = StyleSheet.create({
 });
 
 const PdfAttendanceContent = ({ attendance, patient }) => {
-  console.log("att", attendance);
-  console.log("patient", patient);
+  // console.log("att", attendance);
+  // console.log("patient", patient);
   const totalDays = attendance?.length || 0;
 
   const presentCount = attendance.filter(

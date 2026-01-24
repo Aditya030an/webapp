@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
-
+import SalaryReportPdf from "./pdf/SalaryReportPdf";
 
 const Salary = () => {
   const [employees, setEmployees] = useState([
@@ -11,20 +11,18 @@ const Salary = () => {
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
-
   const handleChange = (index, field, value) => {
     const updated = [...employees];
     updated[index][field] =
       field === "salary"
         ? Number(value)
         : field === "paid"
-        ? value === "true"
-        : value;
+          ? value === "true"
+          : value;
     setEmployees(updated);
   };
 
   const addEmployee = () => {
-    
     setEmployees([
       ...employees,
       { name: "", role: "", month: "", salary: 0, paid: false },
@@ -38,10 +36,10 @@ const Salary = () => {
   const fetchSalaryData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/salary`
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/salary`,
       );
       const result = await response.json();
-      console.log("salary data:", result);
+      // console.log("salary data:", result);
       if (result.success === true) {
         setSalaryData(result.data);
       }
@@ -60,7 +58,7 @@ const Salary = () => {
       totalSalary,
     };
 
-    console.log("salaryData", salaryData);
+    // console.log("salaryData", salaryData);
 
     try {
       const response = await fetch(
@@ -71,11 +69,11 @@ const Salary = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(salaryData),
-        }
+        },
       );
 
       const result = await response.json();
-      console.log("salary", result);
+      // console.log("salary", result);
       fetchSalaryData();
       alert(result.message || "Salary report saved successfully!");
       setEmployees([{ name: "", role: "", month: "", salary: 0, paid: false }]);
@@ -100,19 +98,19 @@ const Salary = () => {
 
   const totalFiltered = filteredEntries.reduce(
     (sum, entry) => sum + entry.totalSalary,
-    0
+    0,
   );
   const paidTotal = filteredEntries.reduce(
     (sum, entry) =>
       sum +
       entry.employees.filter((e) => e.paid).reduce((s, e) => s + e.salary, 0),
-    0
+    0,
   );
   const unpaidTotal = filteredEntries.reduce(
     (sum, entry) =>
       sum +
       entry.employees.filter((e) => !e.paid).reduce((s, e) => s + e.salary, 0),
-    0
+    0,
   );
 
   const generatePDF = () => {
@@ -120,10 +118,12 @@ const Salary = () => {
       <div style="font-family: Arial; padding: 20px;">
         <h2 style="text-align: center;">Salary Report</h2>
       <p><strong>Month:</strong> ${
-  selectedMonth
-    ? new Date(0, selectedMonth - 1).toLocaleString("default", { month: "long" })
-    : "All Months"
-}</p>
+        selectedMonth
+          ? new Date(0, selectedMonth - 1).toLocaleString("default", {
+              month: "long",
+            })
+          : "All Months"
+      }</p>
         <p><strong>Year:</strong> ${selectedYear || "All Years"}</p>
         <p><strong>Total Salary:</strong> ₹${totalFiltered}</p>
         <p><strong>Paid:</strong> ₹${paidTotal}</p>
@@ -147,9 +147,9 @@ const Salary = () => {
                 <td>₹${emp.salary}</td>
                 <td>${emp.paid ? "Paid" : "Unpaid"}</td>
               </tr>
-            `
+            `,
                   )
-                  .join("")
+                  .join(""),
               )
               .join("")}
           </tbody>
@@ -217,6 +217,7 @@ const Salary = () => {
                     <input
                       type="number"
                       value={emp.salary}
+                      min={0}
                       onChange={(e) =>
                         handleChange(idx, "salary", e.target.value)
                       }
@@ -248,7 +249,7 @@ const Salary = () => {
           </button>
 
           <div className="text-right text-lg font-bold mt-2 mb-6">
-            Total Salary: ${totalSalary.toFixed(2)}
+            Total Salary: ₹{totalSalary.toFixed(2)}
           </div>
 
           <div className="flex justify-end space-x-4">
@@ -292,12 +293,14 @@ const Salary = () => {
                 );
               })}
             </select>
-            <button
-              onClick={generatePDF}
-              className="bg-green-600 text-white px-4 py-2 rounded"
-            >
-              Download PDF
-            </button>
+            <SalaryReportPdf
+              filteredEntries={filteredEntries}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              totalFiltered={totalFiltered}
+              paidTotal={paidTotal}
+              unpaidTotal={unpaidTotal}
+            />
           </div>
           <div className="text-right font-bold text-blue-700 mb-2">
             Monthly Total: ₹{totalFiltered} | Paid: ₹{paidTotal} | Unpaid: ₹
@@ -305,64 +308,63 @@ const Salary = () => {
           </div>
         </div>
       </div>
-   <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-  {filteredEntries.length === 0 ? (
-    <div className="col-span-full text-center text-gray-500 text-lg font-medium">
-      No Salary in this month and year.
-    </div>
-  ) : (
-    filteredEntries.map((entry) => (
-      <div
-        key={entry._id}
-        className="bg-white border border-gray-200 rounded-xl shadow p-4"
-      >
-        <h2 className="text-lg font-semibold text-blue-700 mb-2">
-          Salary Sheet
-        </h2>
-        <p className="text-sm text-gray-500 mb-1">
-          Date: {new Date(entry.createdAt).toLocaleDateString()}
-        </p>
-        <div className="mb-3">
-          {entry.employees.map((emp) => (
+      <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredEntries.length === 0 ? (
+          <div className="col-span-full text-center text-gray-500 text-lg font-medium">
+            No Salary in this month and year.
+          </div>
+        ) : (
+          filteredEntries.map((entry) => (
             <div
-              key={emp._id}
-              className="border-t border-gray-200 pt-2 mt-2 text-sm text-gray-700"
+              key={entry._id}
+              className="bg-white border border-gray-200 rounded-xl shadow p-4"
             >
-              <p>
-                <span className="font-medium">Name:</span> {emp.name}
+              <h2 className="text-lg font-semibold text-blue-700 mb-2">
+                Salary Sheet
+              </h2>
+              <p className="text-sm text-gray-500 mb-1">
+                Date: {new Date(entry.createdAt).toLocaleDateString("en-IN")}
               </p>
-              <p>
-                <span className="font-medium">Role:</span> {emp.role}
-              </p>
-              <p>
-                <span className="font-medium">Month:</span> {emp.month}
-              </p>
-              <p>
-                <span className="font-medium">Salary:</span> ₹{emp.salary}
-              </p>
-              <p>
-                <span className="font-medium">Paid:</span>{" "}
-                <span
-                  className={
-                    emp.paid
-                      ? "text-green-600 font-semibold"
-                      : "text-red-600 font-semibold"
-                  }
-                >
-                  {emp.paid ? "Yes" : "No"}
-                </span>
-              </p>
+              <div className="mb-3">
+                {entry.employees.map((emp) => (
+                  <div
+                    key={emp._id}
+                    className="border-t border-gray-200 pt-2 mt-2 text-sm text-gray-700"
+                  >
+                    <p>
+                      <span className="font-medium">Name:</span> {emp.name}
+                    </p>
+                    <p>
+                      <span className="font-medium">Role:</span> {emp.role}
+                    </p>
+                    <p>
+                      <span className="font-medium">Month:</span> {emp.month}
+                    </p>
+                    <p>
+                      <span className="font-medium">Salary:</span> ₹{emp.salary}
+                    </p>
+                    <p>
+                      <span className="font-medium">Paid:</span>{" "}
+                      <span
+                        className={
+                          emp.paid
+                            ? "text-green-600 font-semibold"
+                            : "text-red-600 font-semibold"
+                        }
+                      >
+                        {emp.paid ? "Yes" : "No"}
+                      </span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div className="text-right text-indigo-700 font-bold">
+                Total Salary: ₹{entry.totalSalary}
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="text-right text-indigo-700 font-bold">
-          Total Salary: ₹{entry.totalSalary}
-        </div>
+          ))
+        )}
       </div>
-    ))
-  )}
-</div>
-
     </div>
   );
 };

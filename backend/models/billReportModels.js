@@ -20,8 +20,13 @@ const billSchema = new mongoose.Schema(
     date: { type: Date, required: true },
     status: { type: String, enum: ["Cash", "Online"], default: "Cash" },
     items: [itemSchema],
+
+    //  amount
+    amountInWallet: { type: Number, required: true  , default: 0},
     total: { type: Number, required: true },
     advancePayment: { type: Number, default: 0 },
+
+
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient" },
   },
   {

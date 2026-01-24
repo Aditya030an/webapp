@@ -10,7 +10,7 @@ const Musculoskeletal = () => {
   const patientDetail = location?.state?.patient?.personalDetails;
   const patient_id = location?.state?.patient?._id;
 
-  console.log("patient inside the musculoskeletal", patient);
+  // console.log("patient inside the musculoskeletal", patient);
 
   const { id } = useParams();
   const [loading, setLoading] = useState(false);
@@ -108,7 +108,7 @@ const Musculoskeletal = () => {
   useEffect(() => {
     const employee = localStorage.getItem("loginEmployeeData");
     const data = JSON.parse(employee);
-    console.log("data", data);
+    // console.log("data", data);
     setFormData((prev) => ({
       ...prev,
       physiotherapistName: data?.personalDetails?.fullName,
@@ -139,7 +139,7 @@ const Musculoskeletal = () => {
       const allowedKeys = Object.keys(formData);
 
       const filteredData = pickAllowedFields(lastForm, allowedKeys);
-      console.log("filteredData", filteredData);
+      // console.log("filteredData", filteredData);
       setFormData((prev) => ({
         ...prev,
         ...filteredData,
@@ -184,7 +184,7 @@ const Musculoskeletal = () => {
         body: JSON.stringify(payLoad),
       });
       const result = await response.json();
-      console.log("result", result);
+      // console.log("result", result);
       if (result?.success) {
         alert(result?.message);
         setFormData({
@@ -242,7 +242,7 @@ const Musculoskeletal = () => {
     }
   };
 
-  console.log("history data", history);
+  // console.log("history data", history);
 
   return (
     <div>

@@ -9,15 +9,17 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
     !bill?.status ||
     !bill?.items ||
     !bill?.total
-  ){
+  ) {
     alert("Please fill in all the required fields.");
     return null;
   }
 
   console.log(bill);
+  const totalAdvance =
+    Number(bill?.advancePayment) + Number(bill?.amountInWallet) || 0;
 
   const remainingBalance =
-    Number(bill?.total) - Number(bill?.advancePayment || 0);
+    bill?.total > totalAdvance ? bill?.total - totalAdvance : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -78,10 +80,10 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
           </div>
 
           <div className="flex justify-between text-sm">
-            <span>Advance Paid</span>
+            <span>Total Advance (In Violet + Advance Payment)</span>
             <span className="font-semibold">
               <span className="text-red-500 font-bold text-xl"> - </span>₹
-              {Number(bill?.advancePayment || 0).toLocaleString("en-IN", {
+              {(totalAdvance || 0).toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
@@ -89,13 +91,25 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
           </div>
 
           <div className="flex justify-between text-base font-bold">
-            <span>Remaining Balance</span>
+            <span>Balance Pay</span>
             <span>
               ₹
               {remainingBalance.toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
+            </span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span>Remaining Balance In Wallet </span>
+            <span className="font-semibold">
+              ₹
+              {bill?.total - totalAdvance > 0
+                ? 0
+                : (totalAdvance - bill?.total).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
             </span>
           </div>
         </div>

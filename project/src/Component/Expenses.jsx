@@ -37,7 +37,7 @@ const Expenses = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/report/expenses`,
       );
       const result = await response.json();
-      console.log("Expenses data:", result);
+      // console.log("Expenses data:", result);
       if (result.success === true) {
         setExpensesData(result.data);
       }
@@ -50,7 +50,7 @@ const Expenses = () => {
     fetchExpensesData();
   }, []);
 
-  console.log("Expenses data:", expensesData);
+  // console.log("Expenses data:", expensesData);
 
   const filterExpensesByMonthYear = () => {
     let filtered = expensesData;
@@ -86,7 +86,7 @@ const Expenses = () => {
       total,
     };
 
-    console.log("Submitting form data:", formData);
+    // console.log("Submitting form data:", formData);
 
     try {
       const response = await fetch(
@@ -101,7 +101,7 @@ const Expenses = () => {
       );
 
       const result = await response.json();
-      console.log("expenses saved:", result);
+      // console.log("expenses saved:", result);
       alert(result.message);
       fetchExpensesData();
       // Reset form after submission

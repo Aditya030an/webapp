@@ -138,8 +138,8 @@ const Pilates = () => {
     }
   };
 
-  console.log("active record", activeRecords);
-  console.log("selected record", selectedRecord);
+  // console.log("active record", activeRecords);
+  // console.log("selected record", selectedRecord);
   return (
     <div>
       <div>

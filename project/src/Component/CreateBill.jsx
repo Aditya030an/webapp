@@ -11,6 +11,11 @@ const CreateBill = () => {
   const patientDetail = location?.state?.patient?.personalDetails;
   const patient_id = location?.state?.patient?._id;
   const attendance = location?.state?.patient?.attendance;
+  const previousBill = location?.state?.previousBills;
+  const amountInWallet  =
+    previousBill[0]?.amountInWallet  || 0;
+    // console.log("revious bill", previousBill);
+    // console.log("amount In Wallet", amountInWallet);
 
   const [billNumber, setBillNumber] = useState("");
   const [customer, setCustomer] = useState("");
@@ -107,6 +112,8 @@ const CreateBill = () => {
       items,
       total,
       advancePayment,
+       amountInWallet,
+
     };
 
     const payLoad = {
@@ -127,7 +134,7 @@ const CreateBill = () => {
           body: JSON.stringify(payLoad),
         },
       );
-      
+
       const result = await response.json();
       console.log("Bill saved:", result);
       if (result?.success) {
@@ -292,6 +299,19 @@ const CreateBill = () => {
 
             {/* Total */}
             <div className="space-y-4">
+              {/* Amount in Wallet  */}
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                {/* <span>Amount in Wallet </span> */}
+                <span>Wallet Adjustment:</span>
+                <span className="text-lg font-semibold text-gray-900">
+                  ₹
+                  {amountInWallet .toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+
               {/* Total Amount */}
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>Total Amount</span>
@@ -323,17 +343,55 @@ const CreateBill = () => {
                 />
               </div>
 
-              {/* Remaining Balance */}
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="text-base text-gray-700">
+                  Total Advance (Including Wallet  + Advance Payment)
+                </span>
+                <span className="text-md text-black">
+                  ₹
+                  {(Number(advancePayment) + amountInWallet ).toLocaleString(
+                    "en-IN",
+                    {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    },
+                  )}
+                </span>
+              </div>
+
               <div className="flex items-center justify-between border-t pt-4">
                 <span className="text-base font-medium text-gray-700">
-                  Remaining Balance
+                  Balance Pay
                 </span>
                 <span className="text-xl font-bold text-black">
                   ₹
-                  {(total - advancePayment).toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {total - (Number(advancePayment) + amountInWallet ) < 0
+                    ? 0
+                    : (
+                        total -
+                        (Number(advancePayment) + amountInWallet )
+                      ).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                </span>
+              </div>
+
+              {/* Remaining Balance */}
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="text-base text-gray-700">
+                  Remaining Balance In Wallet 
+                </span>
+                <span className="text-md text-black">
+                  ₹
+                  {(total - (Number(advancePayment) + amountInWallet )) > 0
+                    ? 0
+                    : (
+                        (Number(advancePayment) + amountInWallet ) - total
+                      ).toLocaleString("en-IN", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
                 </span>
               </div>
             </div>
@@ -353,6 +411,7 @@ const CreateBill = () => {
                     items,
                     total,
                     advancePayment,
+                    amountInWallet,
                   });
                 }}
                 className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
@@ -382,6 +441,7 @@ const CreateBill = () => {
                       items,
                       total,
                       advancePayment,
+                      amountInWallet
                     }}
                     patient={patientDetail}
                   />

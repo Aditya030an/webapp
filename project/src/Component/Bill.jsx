@@ -31,7 +31,7 @@ const Bill = () => {
   useEffect(() => {
     fetchBillData();
   }, []);
-  console.log("billData", billData);
+  // console.log("billData", billData);
 
   const handleFilter = (status) => {
     setFilterStatus(status);
@@ -87,7 +87,7 @@ const Bill = () => {
       );
     });
 
-    console.log("selectedFilteredBills", selectedFilteredBills);
+    // console.log("selectedFilteredBills", selectedFilteredBills);
     const totalMonthly = selectedFilteredBills
       .reduce((sum, bill) => sum + bill.total, 0)
       .toFixed(2);
