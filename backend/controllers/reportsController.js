@@ -31,7 +31,7 @@ const createBill = async (req, res) => {
       paidAmount > Number(formData.total)
         ? paidAmount - Number(formData.total)
         : 0;
-    console.log("remainingBalance", remainingBalance);
+    // console.log("remainingBalance", remainingBalance);
 
     const newBill = await billModel.create({
       patientId,

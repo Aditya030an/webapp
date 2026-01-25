@@ -60,6 +60,15 @@ const BillSection = ({ billing, patientDetail, attendance }) => {
                 >
                   Status: {bill.status}
                 </p>
+                <p
+                  className={`text-md font-medium ${
+                    bill?.paymentStatus === "Unpaid"
+                      ? "text-red-500"
+                      : "text-green-500"
+                  }`}
+                >
+                  Payment Status: {bill?.paymentStatus}
+                </p>
               </div>
 
               <div className="mb-2">
@@ -110,9 +119,12 @@ const BillSection = ({ billing, patientDetail, attendance }) => {
                 {/* Remaining Balance */}
                 <div className="flex items-center justify-between border-t pt-4 mt-4">
                   <span className="text-base font-medium text-gray-700">
-                    Balance Pay
+                   
+                    {bill?.paymentStatus === "Unpaid"
+                      ? "Due Amount"
+                      : "Received Amount"}
                   </span>
-                  <span className="text-right font-bold text-green-700">
+                  <span className="text-right font-bold  text-green-700">
                     ₹
                     {bill?.total -
                       (Number(bill?.advancePayment) + bill?.amountInWallet) <

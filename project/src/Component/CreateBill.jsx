@@ -12,10 +12,9 @@ const CreateBill = () => {
   const patient_id = location?.state?.patient?._id;
   const attendance = location?.state?.patient?.attendance;
   const previousBill = location?.state?.previousBills;
-  const amountInWallet  =
-    previousBill[0]?.amountInWallet  || 0;
-    // console.log("revious bill", previousBill);
-    // console.log("amount In Wallet", amountInWallet);
+  const amountInWallet = previousBill[0]?.amountInWallet || 0;
+  // console.log("revious bill", previousBill);
+  // console.log("amount In Wallet", amountInWallet);
 
   const [billNumber, setBillNumber] = useState("");
   const [customer, setCustomer] = useState("");
@@ -24,6 +23,7 @@ const CreateBill = () => {
   const [status, setStatus] = useState("Cash");
   const [items, setItems] = useState([{ name: "", qty: 1, price: 0 }]);
   const [advancePayment, setAdvancePayment] = useState(0);
+  const [paymentStatus, setPaymentStatus] = useState("Unpaid");
 
   const [billData, setBillData] = useState([]);
 
@@ -109,11 +109,11 @@ const CreateBill = () => {
       customer,
       date,
       status,
+      paymentStatus,
       items,
       total,
       advancePayment,
-       amountInWallet,
-
+      amountInWallet,
     };
 
     const payLoad = {
@@ -143,6 +143,7 @@ const CreateBill = () => {
         setCustomer("");
         setDate("");
         setStatus("Cash");
+        setPaymentStatus("Unpaid");
         setBillType("Home");
         setItems([{ name: "", qty: 1, price: 0 }]);
         setAdvancePayment(0);
@@ -185,14 +186,24 @@ const CreateBill = () => {
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">Create Bill</h2>
-              <select
-                className="px-4 py-1 rounded-full text-sm bg-gray-100 border border-gray-300"
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-              >
-                <option value="Cash">Cash</option>
-                <option value="Online">Online</option>
-              </select>
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  className="px-4 py-1 cursor-pointer rounded-full text-sm bg-gray-100 border border-gray-300"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="Cash">Cash</option>
+                  <option value="Online">Online</option>
+                </select>
+                <select
+                  className="px-4 py-1 cursor-pointer rounded-full text-sm bg-gray-100 border border-gray-300"
+                  value={paymentStatus}
+                  onChange={(e) => setPaymentStatus(e.target.value)}
+                >
+                  <option value="Paid">Paid</option>
+                  <option value="Unpaid">Unpaid</option>
+                </select>
+              </div>
             </div>
 
             {/* Bill Info Inputs */}
@@ -305,7 +316,7 @@ const CreateBill = () => {
                 <span>Wallet Adjustment:</span>
                 <span className="text-lg font-semibold text-gray-900">
                   ₹
-                  {amountInWallet .toLocaleString("en-IN", {
+                  {amountInWallet.toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -345,11 +356,11 @@ const CreateBill = () => {
 
               <div className="flex items-center justify-between border-t pt-4">
                 <span className="text-base text-gray-700">
-                  Total Advance (Including Wallet  + Advance Payment)
+                  Total Advance (Including Wallet + Advance Payment)
                 </span>
                 <span className="text-md text-black">
                   ₹
-                  {(Number(advancePayment) + amountInWallet ).toLocaleString(
+                  {(Number(advancePayment) + amountInWallet).toLocaleString(
                     "en-IN",
                     {
                       minimumFractionDigits: 2,
@@ -365,11 +376,11 @@ const CreateBill = () => {
                 </span>
                 <span className="text-xl font-bold text-black">
                   ₹
-                  {total - (Number(advancePayment) + amountInWallet ) < 0
+                  {total - (Number(advancePayment) + amountInWallet) < 0
                     ? 0
                     : (
                         total -
-                        (Number(advancePayment) + amountInWallet )
+                        (Number(advancePayment) + amountInWallet)
                       ).toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -380,14 +391,16 @@ const CreateBill = () => {
               {/* Remaining Balance */}
               <div className="flex items-center justify-between border-t pt-4">
                 <span className="text-base text-gray-700">
-                  Remaining Balance In Wallet 
+                  Remaining Balance In Wallet
                 </span>
                 <span className="text-md text-black">
                   ₹
-                  {(total - (Number(advancePayment) + amountInWallet )) > 0
+                  {total - (Number(advancePayment) + amountInWallet) > 0
                     ? 0
                     : (
-                        (Number(advancePayment) + amountInWallet ) - total
+                        Number(advancePayment) +
+                        amountInWallet -
+                        total
                       ).toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -408,6 +421,7 @@ const CreateBill = () => {
                     customer,
                     date,
                     status,
+                    paymentStatus,
                     items,
                     total,
                     advancePayment,
@@ -438,10 +452,11 @@ const CreateBill = () => {
                       customer,
                       date,
                       status,
+                      paymentStatus,
                       items,
                       total,
                       advancePayment,
-                      amountInWallet
+                      amountInWallet,
                     }}
                     patient={patientDetail}
                   />

@@ -233,12 +233,24 @@ const Total = () => {
       /* ===== INCOME ===== */
       const bills = billData.data.filter((b) => isMatch(b.date));
 
+      // const billed = bills.reduce((s, b) => s + b.total, 0);
+      // const received = bills.reduce(
+      //   (s, b) => s + Math.min(b.total, b.advancePayment || 0),
+      //   0,
+      // );
+      // const pending = billed - received;
+      // const wallet = bills.reduce((s, b) => s + (b.amountInWallet || 0), 0);
+
       const billed = bills.reduce((s, b) => s + b.total, 0);
-      const received = bills.reduce(
-        (s, b) => s + Math.min(b.total, b.advancePayment || 0),
-        0,
-      );
-      const pending = billed - received;
+
+      const received = bills
+        .filter((b) => b.paymentStatus === "Paid")
+        .reduce((s, b) => s + b.total, 0);
+
+      const pending = bills
+        .filter((b) => b.paymentStatus === "Unpaid")
+        .reduce((s, b) => s + b.total, 0);
+
       const wallet = bills.reduce((s, b) => s + (b.amountInWallet || 0), 0);
 
       /* ===== OUTGOING ===== */
@@ -264,6 +276,8 @@ const Total = () => {
 
     fetchData();
   }, [selectedMonth, selectedYear]);
+
+  console.log("data", data);
 
   if (!data) return <p className="p-6">Loading report...</p>;
 
@@ -435,10 +449,16 @@ const Stat = ({ label, value }) => (
   </div>
 );
 
+const colorMap = {
+  blue: "bg-blue-50 text-blue-700",
+  green: "bg-green-50 text-green-700",
+  red: "bg-red-50 text-red-700",
+};
+
 const FlowCard = ({ title, value, color }) => (
-  <div className={`bg-${color}-50 p-6 rounded-lg text-center`}>
-    <p className={`text-${color}-700 font-semibold`}>{title}</p>
-    <p className={`text-${color}-900 text-2xl font-bold`}>₹{value}</p>
+  <div className={`${colorMap[color]} p-6 rounded-lg text-center`}>
+    <p className="font-semibold">{title}</p>
+    <p className="text-2xl font-bold">₹{value}</p>
   </div>
 );
 

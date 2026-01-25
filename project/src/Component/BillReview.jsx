@@ -7,6 +7,7 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
     !bill?.customer ||
     !bill?.date ||
     !bill?.status ||
+    !bill?.paymentStatus ||
     !bill?.items ||
     !bill?.total
   ) {
@@ -46,6 +47,13 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
             }`}
           >
             Status: {bill?.status}
+          </p>
+          <p
+            className={`text-sm font-medium ${
+              bill?.paymentStatus === "Unpaid" ? "text-red-500" : "text-green-600"
+            }`}
+          >
+            Payment Status: {bill?.paymentStatus}
           </p>
         </div>
 

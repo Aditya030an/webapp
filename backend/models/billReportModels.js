@@ -19,6 +19,12 @@ const billSchema = new mongoose.Schema(
     customer: { type: String, required: true },
     date: { type: Date, required: true },
     status: { type: String, enum: ["Cash", "Online"], default: "Cash" },
+    paymentStatus:{
+      type: String,
+      enum: ["Paid", "Unpaid"],
+      default: "Unpaid",
+      required: true,
+    },
     items: [itemSchema],
 
     //  amount
