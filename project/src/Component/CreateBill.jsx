@@ -195,14 +195,7 @@ const CreateBill = () => {
                   <option value="Cash">Cash</option>
                   <option value="Online">Online</option>
                 </select>
-                <select
-                  className="px-4 py-1 cursor-pointer rounded-full text-sm bg-gray-100 border border-gray-300"
-                  value={paymentStatus}
-                  onChange={(e) => setPaymentStatus(e.target.value)}
-                >
-                  <option value="Paid">Paid</option>
-                  <option value="Unpaid">Unpaid</option>
-                </select>
+                
               </div>
             </div>
 
@@ -238,6 +231,17 @@ const CreateBill = () => {
                   className="w-full border border-gray-300 p-2 rounded"
                   placeholder="e.g. John Doe"
                 />
+              </div>
+              <div>
+
+              <select
+                  className="px-4 py-1 cursor-pointer rounded-full text-sm bg-gray-100 border border-gray-300"
+                  value={paymentStatus}
+                  onChange={(e) => setPaymentStatus(e.target.value)}
+                >
+                  <option value="Paid">Paid</option>
+                  <option value="Unpaid">Unpaid</option>
+                </select>
               </div>
             </div>
 

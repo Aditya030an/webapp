@@ -34,9 +34,10 @@ const styles = StyleSheet.create({
 
   header: {
     position: "absolute",
-    top: 10,
+    top: 20,
     left: 40,
     right: 40,
+    zIndex:10,
     borderBottom: "1 solid #0f5c8e",
     paddingBottom: 10,
     flexDirection: "row",
@@ -87,19 +88,25 @@ const PdfTemplate = ({ children, showHeader = true }) => {
           <Image src="/logo2.jpeg" style={styles.logo} />
           {showHeader && (
             <View>
-              <Text style={{ marginBottom: 4 }}>
+              <Text
+                style={{
+                  marginBottom: 4,
+                  fontSize: 10, // 🔥 Bigger name
+                  fontWeight: "bold",
+                }}
+              >
                 Dr. Mayank Gupta (PT), BPT
               </Text>
-              <Text style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize: 8 , marginBottom: 4 }}>
                 Certified PNF Practitioner (IPNFA – Level 3A)
               </Text>
-              <Text style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize:8 , marginBottom: 4 }}>
                 Certified in Mulligan Concept Manual Therapy (C.O.M.M.T)
               </Text>
-              <Text style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize: 8 , marginBottom: 4 }}>
                 Certified Pilates Instructor
               </Text>
-              <Text style={{ marginBottom: 4 }}>
+              <Text style={{ fontSize: 7 , marginBottom: 4 }}>
                 Registration No.: SCH-01/DEG2/25326/2014
               </Text>
             </View>

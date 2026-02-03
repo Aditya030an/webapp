@@ -60,13 +60,14 @@ const formatDate = (date) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    hour12: true,
+    // hour12: true,
   });
 };
 
 const PdfAssessmentContent = ({ data, assessmentType }) => {
   const fields = assessmentFieldConfig[assessmentType] || [];
 
+  console.log("data", data);
   return (
     <View>
       <View
@@ -76,7 +77,7 @@ const PdfAssessmentContent = ({ data, assessmentType }) => {
           marginBottom: 8,
         }}
       >
-        <Text style={{ fontWeight: "bold" }}>{assessmentType} Report</Text>
+        <Text style={{ fontWeight: "bold" }}> {assessmentType} {assessmentType === "Neurological" ? "Assessment" : "Report"} </Text>
         <Text style={styles.meta}>
           Created On: {formatDate(data?.createdAt)}
         </Text>
@@ -130,7 +131,7 @@ const PdfAssessmentContent = ({ data, assessmentType }) => {
             <Text style={styles.label}>{field.label}</Text>
             <Text style={styles.value}>
               {field.type === "date"
-                ? formatDate(value)
+                ? formatDate(data?.createdAt)
                 : typeof value === "object"
                 ? "-"
                 : value || "-"}

@@ -12,7 +12,7 @@ const SalaryReportPdf = ({ filteredEntries, selectedMonth, selectedYear, totalFi
   return (
     <PDFDownloadLink
       document={
-        <PdfTemplate>
+        <PdfTemplate showHeader={false}>
           <View style={{ marginBottom: 10 }}>
             <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 6 }}>Salary Report</Text>
             <Text>Month: {monthName}</Text>

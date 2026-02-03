@@ -52,7 +52,7 @@ const InventoryReportPdf = ({ inventory }) => {
   const grandTotal = inventory.reduce((sum, inv) => sum + inv.total, 0);
 
   return (
-    <PdfTemplate>
+    <PdfTemplate showHeader={false}>
       <Text style={styles.title}>Inventory Report</Text>
       <Text style={styles.meta}>Total Inventory Value: Rs. {grandTotal}</Text>
 

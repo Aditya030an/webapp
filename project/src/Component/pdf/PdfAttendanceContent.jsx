@@ -80,7 +80,7 @@ const PdfAttendanceContent = ({ attendance, patient }) => {
   ).length;
 
   return (
-    <PdfTemplate>
+    <PdfTemplate showHeader={false}>
       <View wrap>
         <View style={styles.section}>
           <Text style={styles.title}>Patient Details</Text>

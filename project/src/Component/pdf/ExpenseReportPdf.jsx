@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
 const ExpenseReportPdf = ({ expenses, month, year, total }) => {
   return (
   
-      <PdfTemplate>
+      <PdfTemplate showHeader={false}>
         <Text style={styles.title}>Expense Report</Text>
 
         <View style={styles.section}>

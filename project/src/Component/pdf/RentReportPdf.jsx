@@ -56,7 +56,7 @@ const RentReportPdf = ({
   totals,
 }) => {
   return (
-    <PdfTemplate>
+    <PdfTemplate showHeader={false}>
       <Text style={styles.title}>Rent Report</Text>
 
       {/* META INFO */}

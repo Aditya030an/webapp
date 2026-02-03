@@ -38,6 +38,8 @@ const AssessmentDetailsModal = ({
     URL.revokeObjectURL(url);
   };
 
+  console.log("data" , data);
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white w-full max-w-4xl rounded-lg p-6 overflow-y-auto max-h-[90vh]">

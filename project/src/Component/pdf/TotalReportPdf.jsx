@@ -49,7 +49,7 @@ const TotalReportPdf = ({ data, selectedMonth, selectedYear }) => {
     : "All Months";
 
   return (
-    <PdfTemplate>
+    <PdfTemplate showHeader={false}>
       {/* ===== TITLE ===== */}
       <View style={styles.section}>
         <Text style={styles.title}>Financial Summary Report</Text>
