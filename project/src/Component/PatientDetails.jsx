@@ -32,6 +32,8 @@ const PatientDetails = () => {
     }
   };
 
+
+
   useEffect(() => {
     if (id) fetchData();
   }, [id]);
@@ -41,7 +43,7 @@ const PatientDetails = () => {
   const { personalDetails, assessment, treatment, attendance, billing } =
     patientDetail;
 
-    // console.log("patient details" , patientDetail);
+    console.log("patient details" , patientDetail);
 
   return (
     <div className="p-4 space-y-6">

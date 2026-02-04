@@ -108,7 +108,7 @@ const Musculoskeletal = () => {
   useEffect(() => {
     const employee = localStorage.getItem("loginEmployeeData");
     const data = JSON.parse(employee);
-    // console.log("data", data);
+    console.log("data", data);
     setFormData((prev) => ({
       ...prev,
       physiotherapistName: data?.personalDetails?.fullName,
@@ -179,7 +179,7 @@ const Musculoskeletal = () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          token: localStorage.getItem("token"),
+          token: localStorage.getItem("webapptoken"),
         },
         body: JSON.stringify(payLoad),
       });
@@ -454,7 +454,7 @@ const Musculoskeletal = () => {
             />
           </Grid>
           <label className="block font-medium mt-2 mb-1">
-            VAS Score (0–10)
+            VAS Score (0–10) {formData.vasScore}
           </label>
           <input
             type="range"

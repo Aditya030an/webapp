@@ -107,7 +107,7 @@ const EnquiryForm = () => {
       const result = await response.json();
       if (result?.success) {
         alert(result.message);
-        fetchAllEnquiries();
+        // fetchAllEnquiries();
         setFormData({
           patientName: "",
           gender: "",
@@ -170,6 +170,7 @@ const EnquiryForm = () => {
               name="contactNumber"
               value={formData.contactNumber}
               onChange={handleChange}
+              maxLength={10}
             />
             <FormField
               label="Email"
@@ -249,6 +250,7 @@ const FormField = ({
   onChange,
   type = "text",
   options = [],
+  maxLength
 }) => (
   <div>
     <label className="block mb-1">{label}</label>
@@ -271,6 +273,7 @@ const FormField = ({
         value={value}
         onChange={onChange}
         className="w-full border p-2 rounded"
+        maxLength={maxLength}
       />
     )}
   </div>

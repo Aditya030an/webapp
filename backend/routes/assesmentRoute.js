@@ -21,7 +21,7 @@ const assessmentRouter = express.Router();
 
 // assessmentRouter.post("/neurological", auth, createNeurologicalForm);
 assessmentRouter.post("/neurological", employeeAuth, createNeurologicalForm);
-assessmentRouter.post("/musculoskeletal", createMusculoskeletalForm);
+assessmentRouter.post("/musculoskeletal",employeeAuth, createMusculoskeletalForm);
 assessmentRouter.post("/obesity", createObesityForm);
 assessmentRouter.post("/pilates", createPilatesForm);
 

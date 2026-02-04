@@ -1,6 +1,8 @@
 import ConvertToPatientForm from "./ConvertToPatientForm";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { MdDelete } from "react-icons/md";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 const AllEnquiry = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -12,9 +14,10 @@ const AllEnquiry = () => {
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
+  const [deletingEnquiryId, setDeletingEnquiryId] = useState(null);
+
   // const [role, setRole] = useState("employee");
-  const tabs =["all", "lead", "patient"];
-  
+  const tabs = ["all", "lead", "patient"];
 
   // useEffect(() => {
   //   const employee = localStorage.getItem("loginEmployeeData");
@@ -140,17 +143,49 @@ const AllEnquiry = () => {
 
       const result = await response.json();
 
-      if (result.success) {
+      if (result?.success) {
         alert("Patient created successfully");
         fetchAllEnquiries(); // refresh list
         setShowConvertToPatientForm(false);
       } else {
-        alert(result.message);
+        alert(result?.message);
       }
     } catch (error) {
       console.error("Convert to patient failed", error);
     }
   };
+
+  const handleDeleteEnquiry = async (enquiryId) => {
+    try {
+      setDeletingEnquiryId(enquiryId);
+      const response = await fetch(
+        `${backendURL}/api/enquiry/deleteEnquiryById/${enquiryId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            token: localStorage.getItem("webapptoken"),
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (result?.success) {
+        console.log("result" , result);
+        fetchAllEnquiries(); // refresh list
+        alert("Enquiry deleted successfully");
+      } else {
+        alert(result?.message);
+      }
+    } catch (error) {
+      console.error("Delete enquiry failed", error);
+    } finally {
+      setDeletingEnquiryId(null);
+    }
+  };
+
+  // console.log("enquiries", enquiries);
   return (
     <div className="px-6">
       <div className="flex flex-wrap gap-4 mt-10 mb-4 items-center ">
@@ -165,7 +200,13 @@ const AllEnquiry = () => {
             {s.toUpperCase()}
           </button>
         ))}
-        <p className="text-black font-semibold">Total Enquiry :- <span className="text-gray-600"> {getFilteredEnquiries()?.length}</span></p>
+        <p className="text-black font-semibold">
+          Total Enquiry :-{" "}
+          <span className="text-gray-600">
+            {" "}
+            {getFilteredEnquiries()?.length}
+          </span>
+        </p>
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
@@ -204,8 +245,19 @@ const AllEnquiry = () => {
           getFilteredEnquiries().map((entry) => (
             <div
               key={entry._id}
-              className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition"
+              className="relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition"
             >
+              <button
+                className={`absolute top-2 right-2 cursor-pointer ${deletingEnquiryId === entry._id ? "cursor-not-allowed" : "cursor-pointer"} `}
+                disabled={deletingEnquiryId === entry._id}
+                onClick={() => handleDeleteEnquiry(entry._id)}
+              >
+                {deletingEnquiryId === entry._id ? (
+                  <AiOutlineLoading3Quarters className="text-2xl text-red-500 animate-spin" />
+                ) : (
+                  <MdDelete className="text-2xl text-red-500 hover:text-red-600" />
+                )}
+              </button>
               {/* {console.log("entry" , entry)} */}
               {/* Header */}
               <div className="mb-2">

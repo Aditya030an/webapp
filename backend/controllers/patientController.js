@@ -27,6 +27,8 @@ const createPatient = async (req, res) => {
       });
     }
 
+    console.log("req.body", req.body);
+
     // 1️⃣ Generate patient code
     const patientCode = await generatePatientCode();
 
@@ -48,10 +50,15 @@ const createPatient = async (req, res) => {
     await enquiryModel.findByIdAndUpdate(
       enquiryId,
       {
+        patientName: name,
+        gender,
+        age,
+        contactNumber,
+        chiefComplaint,
         enquiryStatus: "patient",
         patientId: patient._id, // ✅ ObjectId reference
       },
-      { new: true }
+      { new: true },
     );
 
     res.status(201).json({

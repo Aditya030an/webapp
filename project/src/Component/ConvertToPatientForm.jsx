@@ -11,6 +11,8 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
     enquiryStatus: "patient",
   });
 
+  const [loading , setLoading] = useState(false);
+
   useEffect(() => {
     if (selectedEnquiry) {
       setFormData({
@@ -63,9 +65,11 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setLoading(true);
     if (!validateForm()) return;
 
     onSubmit(formData);
+    setLoading(false);
   };
 
   return (
@@ -75,7 +79,7 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-6">
-            <Input label="Name" name="name" value={formData.name} readOnly />
+            <Input label="Name" name="name" value={formData.name}  onChange={handleChange} />
             <Input
               label="Age"
               name="age"
@@ -98,6 +102,7 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
               name="contactNumber"
               value={formData.contactNumber}
               onChange={handleChange}
+              maxLength={10}
             />
           </div>
 
@@ -128,9 +133,13 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
             </button>
             <button
               type="submit"
+              disabled={loading}
               className="px-4 py-2 bg-green-600 text-white rounded"
             >
-              Convert to Patient
+              {
+                loading ? "Converting..." : "Convert to Patient"
+              }
+             
             </button>
           </div>
         </form>
@@ -141,12 +150,13 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
 
 /* -------------------- INPUT COMPONENTS -------------------- */
 
-const Input = ({ label, readOnly, ...props }) => (
+const Input = ({ label,maxLength, readOnly, ...props }) => (
   <div>
     <label className="block text-sm font-medium mb-1">{label} <span className="text-red-500">*</span></label>
     <input
       {...props}
       readOnly={readOnly}
+      maxLength={maxLength}
       className={`w-full border rounded-md p-2 ${
         readOnly ? "bg-gray-100 cursor-not-allowed" : "bg-white"
       }`}
