@@ -10,6 +10,8 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
   const [date, setDate] = useState(currentDate);
   const [status, setStatus] = useState("Present");
   const [loading, setLoading] = useState(false);
+  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const [selectedMonth, setSelectedMonth] = useState("");
 
   const handleSubmit = async () => {
     if (!date || !status) {
@@ -32,7 +34,7 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
             date,
             status,
           }),
-        }
+        },
       );
 
       const result = await res.json();
@@ -52,7 +54,7 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
 
   const downloadAttendancePdf = async (attendance, patientDetail) => {
     const blob = await pdf(
-      <AttendancePdf attendance={attendance} patientDetail={patientDetail} />
+      <AttendancePdf attendance={attendance} patientDetail={patientDetail} />,
     ).toBlob();
 
     const url = URL.createObjectURL(blob);
@@ -62,9 +64,38 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
     link.click();
   };
 
+  const filteredAttendance = selectedMonth
+    ? attendance?.filter((a) => {
+        const recordMonth = new Date(a.date).toISOString().slice(0, 7);
+        return recordMonth === selectedMonth;
+      })
+    : attendance;
+
   return (
     <section className="border rounded-lg p-4">
-      <h2 className="font-semibold text-lg mb-3">Attendance</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold text-lg mb-3">Attendance</h2>
+
+        <div className="flex items-center gap-2 mb-3">
+          <label className="text-sm text-gray-600">Filter by month:</label>
+
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="border px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+
+          {selectedMonth && (
+            <button
+              onClick={() => setSelectedMonth("")}
+              className="text-xs text-blue-600 hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* ➕ ADD ATTENDANCE FORM */}
       <div className="flex flex-wrap gap-2 items-center mb-3">
@@ -91,11 +122,34 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
         >
           {loading ? "Saving..." : "Add"}
         </button>
-        <PDFDownloadLink
+        {/* <PDFDownloadLink
           document={
-            <PdfAttendanceContent attendance={attendance} patient={patientDetail?.personalDetails} />
+            <PdfAttendanceContent
+              attendance={attendance}
+              patient={patientDetail?.personalDetails}
+            />
           }
           fileName={`Attendance-${patientDetail?.personalDetails?.name}.pdf`}
+        >
+          {({ loading }) => (
+            <button className="px-3 w-full bg-green-600 text-white py-1 rounded-md text-sm hover:bg-green-700">
+              {loading ? "Generating PDF..." : "Download PDF"}
+            </button>
+          )}
+        </PDFDownloadLink> */}
+        <PDFDownloadLink
+          document={
+            <PdfAttendanceContent
+              attendance={filteredAttendance}
+              patient={patientDetail?.personalDetails}
+              month={selectedMonth}
+            />
+          }
+          fileName={
+            selectedMonth
+              ? `Attendance-${patientDetail?.personalDetails?.name}-${selectedMonth}.pdf`
+              : `Attendance-${patientDetail?.personalDetails?.name}-All.pdf`
+          }
         >
           {({ loading }) => (
             <button className="px-3 w-full bg-green-600 text-white py-1 rounded-md text-sm hover:bg-green-700">
@@ -105,9 +159,19 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
         </PDFDownloadLink>
       </div>
 
+      {selectedMonth && (
+        <p className="text-xs text-gray-500 mb-2">
+          Showing attendance for{" "}
+          {new Date(selectedMonth + "-01").toLocaleString("en-IN", {
+            month: "long",
+            year: "numeric",
+          })}
+        </p>
+      )}
+
       {/* 📋 ATTENDANCE LIST */}
       {/* 📋 ATTENDANCE TABLE */}
-      {attendance?.length === 0 ? (
+      {filteredAttendance?.length === 0 ? (
         <p className="text-sm text-gray-500">No attendance records</p>
       ) : (
         <div className="overflow-x-auto">
@@ -119,7 +183,7 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
               </tr>
             </thead>
             <tbody>
-              {attendance.map((a, i) => (
+              {filteredAttendance.map((a, i) => (
                 <tr key={i}>
                   <td className="border px-3 py-2">
                     {new Date(a.date).toLocaleDateString("en-IN")}
