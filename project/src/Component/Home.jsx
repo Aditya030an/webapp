@@ -158,6 +158,7 @@ const EnquiryForm = () => {
               type="number"
               value={formData.age}
               onChange={handleChange}
+              min={0}
             />
             <FormField
               label="Occupation"
@@ -250,7 +251,7 @@ const FormField = ({
   onChange,
   type = "text",
   options = [],
-  maxLength
+  maxLength , min
 }) => (
   <div>
     <label className="block mb-1">{label}</label>
@@ -274,6 +275,7 @@ const FormField = ({
         onChange={onChange}
         className="w-full border p-2 rounded"
         maxLength={maxLength}
+        min={min}
       />
     )}
   </div>

@@ -1,12 +1,33 @@
 import Patient from "../models/patientModel.js";
 import enquiryModel from "../models/enquiryModels.js";
+import Counter from "../models/counterModel.js";
 
 /* ---------- Generate Human Patient ID ---------- */
+
 const generatePatientCode = async () => {
-  const count = await Patient.countDocuments();
   const year = new Date().getFullYear();
-  return `MR-${String(count + 1).padStart(5, "0")}/${year}`;
+
+  // Get patient with highest patientId number
+  const lastPatient = await Patient.findOne(
+    {},
+    { "personalDetails.patientId": 1 }
+  )
+    .sort({ "personalDetails.patientId": -1 })
+    .lean();
+
+  let nextNumber = 1;
+
+  if (lastPatient?.personalDetails?.patientId) {
+    // Example: MR-00027/2026 → 27
+    const lastId = lastPatient.personalDetails.patientId;
+    const numberPart = parseInt(lastId.split("-")[1].split("/")[0], 10);
+    nextNumber = numberPart + 1;
+  }
+
+  return `MR-${String(nextNumber).padStart(5, "0")}/${year}`;
 };
+
+
 
 const createPatient = async (req, res) => {
   try {
@@ -31,6 +52,8 @@ const createPatient = async (req, res) => {
 
     // 1️⃣ Generate patient code
     const patientCode = await generatePatientCode();
+
+    console.log("patientCode", patientCode);
 
     // 2️⃣ Create patient
     const patient = await Patient.create({
@@ -68,6 +91,15 @@ const createPatient = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+
+    // 🔐 Duplicate safety (extra protection)
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Patient ID already exists",
+      });
+    }
+
     res.status(500).json({
       success: false,
       message: "Failed to create patient",

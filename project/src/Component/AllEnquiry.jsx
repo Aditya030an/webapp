@@ -133,7 +133,7 @@ const AllEnquiry = () => {
         enquiryId: selectedEnquiry?._id, // 👈 IMPORTANT
       };
 
-      // console.log("payload", payload);
+      console.log("payload", payload);  
 
       const response = await fetch(`${backendURL}/api/patient/createPatient`, {
         method: "POST",
@@ -142,6 +142,8 @@ const AllEnquiry = () => {
       });
 
       const result = await response.json();
+
+      console.log("result" , result);
 
       if (result?.success) {
         alert("Patient created successfully");
