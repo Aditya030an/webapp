@@ -76,13 +76,13 @@ const styles = StyleSheet.create({
 
 const PdfTemplate = ({ children, showHeader = true }) => {
   // console.log("children", children);
-  const pageStyle = {
-    ...styles.page,
-    paddingTop: showHeader ? 110 : 60, // 🔥 key line
-  };
+  // const pageStyle = {
+  //   ...styles.page,
+  //   paddingTop: showHeader ? 110 : 60, // 🔥 key line
+  // };
   return (
     <Document>
-      <Page size="A4" style={pageStyle} wrap>
+      <Page size="A4" style={styles.page} wrap>
         {/* Header */}
         <View style={styles.header} fixed>
           <Image src="/logo2.jpeg" style={styles.logo} />
