@@ -84,6 +84,55 @@ const getBill = async (req, res) => {
   }
 };
 
+const updateBillPaymentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // ✅ Validate input
+    if (!status) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment status is required",
+      });
+    }
+
+    if (!["Paid", "Unpaid"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status (Only Paid / Unpaid allowed)",
+      });
+    }
+
+    // ✅ Find bill
+    const bill = await billModel.findById(id);
+
+    if (!bill) {
+      return res.status(404).json({
+        success: false,
+        message: "Bill not found",
+      });
+    }
+
+    // ✅ Update ONLY paymentStatus (safe PUT)
+    bill.paymentStatus = status;
+
+    await bill.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Payment status updated successfully",
+      bill,
+    });
+  } catch (error) {
+    console.log("PUT update error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 const deleteBill = async (req, res) => {
   try {
     const id = req.params.id;
@@ -220,6 +269,89 @@ const getRent = async (req, res) => {
   }
 };
 
+// const updateRentStatus = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { status } = req.body;
+//     const validStatus = ["Paid", "Unpaid", "Pending"];
+//     if (!validStatus.includes(status)) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid status value",
+//       });
+//     }
+
+//     console.log(id , status);
+
+//     const updatedRent = await rentModel.findByIdAndUpdate(
+//       id,
+//       { status },
+//       { new: true },
+//     );
+
+//     if (!updatedRent) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Rent record not found",
+//       });
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Status updated successfully",
+//       data: updatedRent,
+//     });
+//   } catch (error) {
+//     console.error("Update error:", error);
+//     res.status(500).json({
+//       success: false,
+//       message: "Server error",
+//     });
+//   }
+// };
+
+const updateRentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const validStatus = ["Paid", "Unpaid", "Pending"];
+
+    if (!validStatus.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status",
+      });
+    }
+
+    console.log(id , status);
+
+    const updated = await rentModel.findByIdAndUpdate(
+      id,
+      { $set: { status } }, // ✅ safer
+      { new: true, runValidators: true }
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Rent not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Status updated",
+      data: updated,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 const createSalary = async (req, res) => {
   try {
     const { ...formData } = req.body;
@@ -259,15 +391,60 @@ const getSalary = async (req, res) => {
   }
 };
 
+const updateSalaryPaidStatus = async (req, res) => {
+  try {
+    const { entryId, empId } = req.params;
+    const { paid } = req.body;
+
+    const salary = await salaryModel.findById(entryId);
+
+    if (!salary) {
+      return res.status(404).json({
+        success: false,
+        message: "Salary entry not found",
+      });
+    }
+
+    const employee = salary.employees.id(empId);
+
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: "Employee not found",
+      });
+    }
+
+    // ✅ update field
+    employee.paid = paid;
+
+    await salary.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Paid status updated successfully",
+      data: salary,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 export {
   createBill,
   getBill,
+  updateBillPaymentStatus,
   createExpenses,
   getExpenses,
   createInventory,
   getInventory,
   createRent,
   getRent,
+  updateRentStatus,
   createSalary,
   getSalary,
+  updateSalaryPaidStatus,
 };

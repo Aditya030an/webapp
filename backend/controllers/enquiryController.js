@@ -27,6 +27,7 @@ const createEnquiry = async (req, res) => {
       contactNumber,
       email,
       chiefComplaint,
+      remark,
       response,
       source,
       paymentStatus,
@@ -54,6 +55,7 @@ const createEnquiry = async (req, res) => {
       contactNumber,
       email,
       chiefComplaint,
+      remark,
       response,
       source,
       paymentStatus,
@@ -91,6 +93,28 @@ const getEnquiry = async (req, res)=>{
     console.log(err);
   }
 }
+
+
+const getPatientAttendanceEnquiry = async (req, res) => {
+  try {
+    const enquiries = await enquiryModel
+      .find({ enquiryStatus: "patient" })
+      .select("patientName updatedAt patientId")
+      .populate({
+        path: "patientId",
+        select: "personalDetails attendance",
+        populate: {
+          path: "attendance",
+          select: "date status",
+        },
+      });
+
+    res.status(200).json({ enquiries });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Error fetching enquiries" });
+  }
+};
 
 const getPersonalDetails = async (req, res) => {
   try {
@@ -199,4 +223,4 @@ const deleteEnquiryById = async (req, res) => {
   }
 };
 
-export { createEnquiry, getEnquiry , getPersonalDetails , updatedEnquiry , deleteEnquiryById };
+export { createEnquiry, getEnquiry , getPatientAttendanceEnquiry , getPersonalDetails , updatedEnquiry , deleteEnquiryById };

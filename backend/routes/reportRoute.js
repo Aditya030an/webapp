@@ -1,5 +1,5 @@
 import express from 'express';
-import { createBill, createExpenses , createInventory , createRent ,createSalary , getBill , getExpenses , getInventory , getRent , getSalary} from '../controllers/reportsController.js';
+import { createBill, createExpenses , createInventory , createRent ,createSalary , getBill , getExpenses , getInventory , getRent , getSalary, updateBillPaymentStatus, updateRentStatus, updateSalaryPaidStatus} from '../controllers/reportsController.js';
 
 const reportRouter = express.Router();
 
@@ -15,5 +15,8 @@ reportRouter.get("/inventory" , getInventory);
 reportRouter.get("/rent" , getRent);
 reportRouter.get("/salary" , getSalary);
 
+reportRouter.put("/rent/:id" , updateRentStatus);
+reportRouter.put("/salary/:entryId/:empId", updateSalaryPaidStatus);
+reportRouter.put("/bill/:id", updateBillPaymentStatus);
 
 export default reportRouter;

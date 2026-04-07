@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 const inventoryItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
+    date: {
+    type: Date,
+    required: true,
+    default: Date.now, // auto-fill if not provided
+  },
   quantity: { type: Number, default: 1 },
   unitPrice: { type: Number, required: true },
 });

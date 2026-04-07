@@ -34,6 +34,10 @@ const enquirySchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  remark: {
+    type: String,
+    required: true,
+  },
   response: {
     type: String,
     enum: ["Pending", "Done", "Deny"],

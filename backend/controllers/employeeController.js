@@ -300,6 +300,9 @@ const loginEmployee = async (req, res) => {
       });
     }
 
+  console.log("type employee pas", employee.personalDetails.password);
+console.log("type pas", password);
+
     if (employee.personalDetails.password !== password) {
       return res.status(401).json({
         success: false,
