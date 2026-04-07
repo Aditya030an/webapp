@@ -24,6 +24,11 @@ const EnquiryInfoSection = ({enquiryId}) => {
           <b>Amount/Day:</b> ₹{enquiryId?.amountPerDay}
         </p>
       </div>
+      <div className="text-sm mt-2">
+        <p>
+          <b>Remarks: </b> {enquiryId?.remark}
+        </p>
+      </div>
     </section>
   );
 };

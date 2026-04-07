@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import SalaryReportPdf from "./pdf/SalaryReportPdf";
+import { MdEdit, MdClose } from "react-icons/md";
 
 const Salary = () => {
   const [employees, setEmployees] = useState([
@@ -32,6 +33,16 @@ const Salary = () => {
   const totalSalary = employees.reduce((sum, emp) => sum + emp.salary, 0);
 
   const [salaryData, setSalaryData] = useState([]);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  const [editId, setEditId] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState(null);
+
+  const employeeOptions = [
+    ...new Set(
+      salaryData.flatMap((entry) => entry.employees.map((emp) => emp.name)),
+    ),
+  ];
 
   const fetchSalaryData = async () => {
     try {
@@ -39,7 +50,7 @@ const Salary = () => {
         `${import.meta.env.VITE_BACKEND_URL}/api/report/salary`,
       );
       const result = await response.json();
-      // console.log("salary data:", result);
+      console.log("salary data:", result);
       if (result.success === true) {
         setSalaryData(result.data);
       }
@@ -83,6 +94,36 @@ const Salary = () => {
     }
   };
 
+  const updatePaidStatus = async (entryId, empId, paid) => {
+    console.log("ntryIde", entryId);
+    console.log("empId", empId);
+    console.log("paid", paid);
+  try {
+    const response = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/report/salary/${entryId}/${empId}`,
+      {
+        method: "PUT", // ✅ using PUT now
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ paid }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (result.success) {
+      fetchSalaryData();
+      setEditId(null);
+      setUpdateStatus(null);
+    } else {
+      alert("Failed to update status");
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
   const filteredEntries = salaryData.filter((entry) => {
     return entry.employees.some((emp) => {
       const [yr, mo] = emp.month.split("-");
@@ -100,6 +141,7 @@ const Salary = () => {
     (sum, entry) => sum + entry.totalSalary,
     0,
   );
+
   const paidTotal = filteredEntries.reduce(
     (sum, entry) =>
       sum +
@@ -113,55 +155,18 @@ const Salary = () => {
     0,
   );
 
-  const generatePDF = () => {
-    const content = `
-      <div style="font-family: Arial; padding: 20px;">
-        <h2 style="text-align: center;">Salary Report</h2>
-      <p><strong>Month:</strong> ${
-        selectedMonth
-          ? new Date(0, selectedMonth - 1).toLocaleString("default", {
-              month: "long",
-            })
-          : "All Months"
-      }</p>
-        <p><strong>Year:</strong> ${selectedYear || "All Years"}</p>
-        <p><strong>Total Salary:</strong> ₹${totalFiltered}</p>
-        <p><strong>Paid:</strong> ₹${paidTotal}</p>
-        <p><strong>Unpaid:</strong> ₹${unpaidTotal}</p>
-        <table border="1" cellspacing="0" cellpadding="8" width="100%" style="border-collapse: collapse; font-size: 12px; margin-top: 20px;">
-          <thead style="background: #f0f0f0;">
-            <tr>
-              <th>Name</th><th>Role</th><th>Month</th><th>Salary</th><th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredEntries
-              .map((entry) =>
-                entry.employees
-                  .map(
-                    (emp) => `
-              <tr>
-                <td>${emp.name}</td>
-                <td>${emp.role}</td>
-                <td>${emp.month}</td>
-                <td>₹${emp.salary}</td>
-                <td>${emp.paid ? "Paid" : "Unpaid"}</td>
-              </tr>
-            `,
-                  )
-                  .join(""),
-              )
-              .join("")}
-          </tbody>
-        </table>
-      </div>`;
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setActiveDropdown(null);
+    };
 
-    html2pdf().from(content).save("Salary_Report.pdf");
-  };
+    window.addEventListener("click", handleClickOutside);
+    return () => window.removeEventListener("click", handleClickOutside);
+  }, []);
 
   return (
     <div>
-      <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
+      <div className=" bg-gray-100 px-4 md:px-6 py-6">
         {/* Salary Form */}
         <div className="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
@@ -182,15 +187,55 @@ const Salary = () => {
               {employees.map((emp, idx) => (
                 <tr key={idx} className="border-b">
                   <td className="p-2">
-                    <input
-                      type="text"
-                      value={emp.name}
-                      onChange={(e) =>
-                        handleChange(idx, "name", e.target.value)
-                      }
-                      placeholder="Employee name"
-                      className="w-full border border-gray-300 p-1 rounded"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={emp.name}
+                        onChange={(e) => {
+                          handleChange(idx, "name", e.target.value);
+                          setActiveDropdown(idx);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        onFocus={() => setActiveDropdown(idx)}
+                        placeholder="Employee name"
+                        className="w-full border border-gray-300 p-2 rounded"
+                      />
+
+                      {/* Dropdown */}
+                      {activeDropdown === idx && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          className="absolute z-10 w-full bg-white border border-gray-200 rounded shadow max-h-40 overflow-y-auto"
+                        >
+                          {employeeOptions
+                            .filter((name) =>
+                              name
+                                .toLowerCase()
+                                .includes(emp.name.toLowerCase()),
+                            )
+                            .map((name, i) => (
+                              <div
+                                key={i}
+                                onClick={() => {
+                                  handleChange(idx, "name", name);
+                                  setActiveDropdown(null);
+                                }}
+                                className="px-3 py-2 cursor-pointer hover:bg-blue-100"
+                              >
+                                {name}
+                              </div>
+                            ))}
+
+                          {employeeOptions.filter((name) =>
+                            name.toLowerCase().includes(emp.name.toLowerCase()),
+                          ).length === 0 && (
+                            <div className="px-3 py-2 text-gray-400 text-sm">
+                              No results found
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="p-2">
                     <input
@@ -331,9 +376,24 @@ const Salary = () => {
                     key={emp._id}
                     className="border-t border-gray-200 pt-2 mt-2 text-sm text-gray-700"
                   >
-                    <p>
-                      <span className="font-medium">Name:</span> {emp.name}
-                    </p>
+                    <div className="flex emps-center justify-between">
+                      <p>
+                        <span className="font-medium">Name:</span> {emp.name}
+                      </p>
+                      <button
+                        onClick={() => {
+                          setEditId(editId === emp._id ? null : emp._id);
+                          setUpdateStatus(emp?.paid);
+                        }}
+                        className="p-1 rounded hover:bg-gray-100"
+                      >
+                        {editId === emp._id ? (
+                          <MdClose size={18} className="text-red-500" />
+                        ) : (
+                          <MdEdit size={18} className="text-blue-500" />
+                        )}
+                      </button>
+                    </div>
                     <p>
                       <span className="font-medium">Role:</span> {emp.role}
                     </p>
@@ -343,18 +403,60 @@ const Salary = () => {
                     <p>
                       <span className="font-medium">Salary:</span> ₹{emp.salary}
                     </p>
-                    <p>
+                    {/* <p>
                       <span className="font-medium">Paid:</span>{" "}
-                      <span
-                        className={
-                          emp.paid
-                            ? "text-green-600 font-semibold"
-                            : "text-red-600 font-semibold"
+                      <button
+                        onClick={() =>
+                          updatePaidStatus(entry._id, emp._id, !emp.paid)
                         }
+                        className={`px-2 py-1 rounded text-xs font-semibold ${
+                          emp.paid
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
                       >
-                        {emp.paid ? "Yes" : "No"}
-                      </span>
-                    </p>
+                        {emp.paid ? "Paid" : "Unpaid"}
+                      </button>
+                    </p> */}
+                    {editId === emp._id ? (
+                      <div className="text-sm">
+                        Paid:
+                        <select
+                          value={updateStatus ? "true" : "false"}
+                          onChange={(e) =>
+                            setUpdateStatus(e.target.value === "true")
+                          }
+                          className="ml-2 border px-2 py-1 rounded"
+                        >
+                          <option value="true">Paid</option>
+                          <option value="false">Unpaid</option>
+                        </select>
+                        <button
+                          disabled={updateStatus === emp.paid}
+                          onClick={() =>
+                            updatePaidStatus(entry._id, emp._id, updateStatus)
+                          }
+                          className={`px-2 py-1 rounded text-xs ml-2 ${
+                            updateStatus === emp.paid
+                              ? "bg-gray-300 cursor-not-allowed"
+                              : "bg-green-600 text-white"
+                          }`}
+                        >
+                          OK
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-sm">
+                        Paid:{" "}
+                        <span
+                          className={`font-semibold ${
+                            emp.paid ? "text-green-600" : "text-red-600"
+                          }`}
+                        >
+                          {emp.paid ? "Paid" : "Unpaid"}
+                        </span>
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

@@ -174,7 +174,7 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
       {filteredAttendance?.length === 0 ? (
         <p className="text-sm text-gray-500">No attendance records</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
           <table className="w-full border text-sm">
             <thead className="bg-gray-100">
               <tr>

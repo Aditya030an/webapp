@@ -133,7 +133,7 @@ const AllEnquiry = () => {
         enquiryId: selectedEnquiry?._id, // 👈 IMPORTANT
       };
 
-      console.log("payload", payload);  
+      console.log("payload", payload);
 
       const response = await fetch(`${backendURL}/api/patient/createPatient`, {
         method: "POST",
@@ -143,7 +143,7 @@ const AllEnquiry = () => {
 
       const result = await response.json();
 
-      console.log("result" , result);
+      console.log("result", result);
 
       if (result?.success) {
         alert("Patient created successfully");
@@ -158,6 +158,11 @@ const AllEnquiry = () => {
   };
 
   const handleDeleteEnquiry = async (enquiryId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this enquiry?",
+    );
+
+    if (!confirmDelete) return;
     try {
       setDeletingEnquiryId(enquiryId);
       const response = await fetch(
@@ -174,7 +179,7 @@ const AllEnquiry = () => {
       const result = await response.json();
 
       if (result?.success) {
-        console.log("result" , result);
+        console.log("result", result);
         fetchAllEnquiries(); // refresh list
         alert("Enquiry deleted successfully");
       } else {
@@ -187,7 +192,7 @@ const AllEnquiry = () => {
     }
   };
 
-  // console.log("enquiries", enquiries);
+  console.log("enquiries", enquiries);
   return (
     <div className="px-6">
       <div className="flex flex-wrap gap-4 mt-10 mb-4 items-center ">
@@ -283,6 +288,10 @@ const AllEnquiry = () => {
                 <p className="font-semibold text-gray-800 text-base">
                   <span className="text-sm text-gray-500">Contact number-</span>{" "}
                   {entry?.contactNumber}
+                </p>
+                <p className="font-semibold text-gray-800 text-base">
+                  <span className="text-sm text-gray-500">Remark-</span>{" "}
+                  {entry?.remark}
                 </p>
               </div>
 

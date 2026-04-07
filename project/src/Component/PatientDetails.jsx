@@ -72,7 +72,7 @@ const PatientDetails = () => {
       />
 
       {/* ================= BILLING ================= */}
-      <BillSection billing={billing} patientDetail={patientDetail} attendance={attendance} />
+      <BillSection fetchData={fetchData} billing={billing} patientDetail={patientDetail} attendance={attendance} />
     </div>
   );
 };

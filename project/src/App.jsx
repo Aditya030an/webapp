@@ -25,6 +25,7 @@ import AllEnquiry from "./Component/AllEnquiry.jsx";
 import AllEmployee from "./Component/AllEmployee.jsx";
 import ProtectedRouteAdmin from "./routers/ProtectedRouteAdmin.jsx";
 import CreateBill from "./Component/CreateBill.jsx";
+import PatientAttendancePage from "./Component/PatientAttendancePage.jsx";
 
 function App() {
   const [role, setRole] = useState("employee");
@@ -165,6 +166,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Rent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="daily-attendance"
+            element={
+              <ProtectedRoute>
+                <PatientAttendancePage />
               </ProtectedRoute>
             }
           />

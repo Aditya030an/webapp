@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import RentReportPdf from "../Component/pdf/RentReportPdf.jsx";
+import { MdEdit, MdClose } from "react-icons/md";
 
 const Rent = () => {
   const [propertyName, setPropertyName] = useState("");
@@ -17,6 +18,9 @@ const Rent = () => {
 
   const [rentData, setRentData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
+
+  const [editId, setEditId] = useState(null);
+  const [updateStatus, setUpdateStatus] = useState(null);
 
   const fetchRentData = async () => {
     try {
@@ -91,6 +95,71 @@ const Rent = () => {
       console.error("Error:", error);
     }
   };
+
+  const handleStatusUpdate = async (id, newStatus) => {
+    console.log(id, newStatus);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/rent/${id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ status: newStatus }),
+        },
+      );
+
+      const result = await response.json();
+
+      console.log('result' , result);
+
+      if (result.success) {
+        fetchRentData(); // refresh
+        setEditId(null);
+        setUpdateStatus(null);
+      } else {
+        alert(result.message);
+          setEditId(null);
+        setUpdateStatus(null);
+      }
+    } catch (error) {
+      console.error("Update failed", error);
+    }
+  };
+
+  const monthWiseSummary = filteredData.reduce((acc, item) => {
+    const date = new Date(item.month);
+    const monthYear = date.toLocaleString("default", {
+      month: "short",
+      year: "numeric",
+    });
+
+    if (!acc[monthYear]) {
+      acc[monthYear] = {
+        Paid: 0,
+        Unpaid: 0,
+        Pending: 0,
+        Total: 0, // ✅ NEW
+      };
+    }
+
+    acc[monthYear][item.status] += item.amount;
+    acc[monthYear].Total += item.amount; // ✅ NEW
+
+    return acc;
+  }, {});
+
+  const grandTotals = Object.values(monthWiseSummary).reduce(
+    (acc, curr) => {
+      acc.Paid += curr.Paid;
+      acc.Unpaid += curr.Unpaid;
+      acc.Pending += curr.Pending;
+      acc.Total += curr.Total;
+      return acc;
+    },
+    { Paid: 0, Unpaid: 0, Pending: 0, Total: 0 },
+  );
 
   const generatePDF = () => {
     const content = `
@@ -258,44 +327,117 @@ const Rent = () => {
           </div>
         </div>
 
+        {/* Month-wise Summary */}
+        <div className="bg-white rounded-xl shadow p-4">
+          <h2 className="text-lg font-semibold text-gray-700 mb-3">
+            Month-wise Summary
+          </h2>
+
+          {Object.keys(monthWiseSummary).length === 0 ? (
+            <p className="text-gray-500">No data available</p>
+          ) : (
+            <div className="space-y-2">
+              {Object.entries(monthWiseSummary).map(([month, data]) => (
+                <div
+                  key={month}
+                  className="flex flex-wrap justify-between border-b pb-2"
+                >
+                  <span className="font-medium text-gray-800">{month}</span>
+
+                  <div className="flex gap-4 text-sm">
+                    <span className="text-green-600">Paid: ₹{data.Paid}</span>
+                    <span className="text-red-600">Unpaid: ₹{data.Unpaid}</span>
+                    <span className="text-yellow-600">
+                      Pending: ₹{data.Pending}
+                    </span>
+                    <span className="font-semibold text-gray-800">
+                      Total: ₹{data.Total} {/* ✅ NEW */}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-4 border-t pt-3 font-semibold flex flex-wrap gap-4">
+          <span className="text-green-600">Paid: ₹{grandTotals.Paid}</span>
+          <span className="text-red-600">Unpaid: ₹{grandTotals.Unpaid}</span>
+          <span className="text-yellow-600">
+            Pending: ₹{grandTotals.Pending}
+          </span>
+          <span>Total: ₹{grandTotals.Total}</span>
+        </div>
+
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-3 items-center">
-          <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="input w-full sm:w-auto"
-          >
-            <option value="">All Months</option>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {new Date(0, i).toLocaleString("default", { month: "long" })}
-              </option>
-            ))}
-          </select>
+        <div className="bg-white rounded-xl shadow p-4 flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex flex-wrap gap-3 items-center">
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="input w-full sm:w-auto"
+            >
+              <option value="">All Months</option>
+              {Array.from({ length: 12 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {new Date(0, i).toLocaleString("default", { month: "long" })}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="input w-full sm:w-auto"
-          >
-            <option value="">All Years</option>
-            {[2023, 2024, 2025, 2026].map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
-            ))}
-          </select>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="input w-full sm:w-auto"
+            >
+              <option value="">All Years</option>
+              {[2023, 2024, 2025, 2026].map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
 
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="input w-full sm:w-auto"
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="input w-full sm:w-auto"
+            >
+              <option value="">All Status</option>
+              <option value="Paid">Paid</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Pending">Pending</option>
+            </select>
+          </div>
+
+          <PDFDownloadLink
+            document={
+              <RentReportPdf
+                rents={filteredData}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                selectedStatus={selectedStatus}
+                totals={{
+                  total: filteredTotal,
+                  paid: paidTotal,
+                  unpaid: unpaidTotal,
+                  pending: pendingTotal,
+                }}
+              />
+            }
+            fileName={`Rent_Report_${selectedMonth || "All"}_${
+              selectedYear || "Years"
+            }.pdf`}
           >
-            <option value="">All Status</option>
-            <option value="Paid">Paid</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Pending">Pending</option>
-          </select>
+            {({ loading }) => (
+              <button
+                className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                disabled={loading}
+              >
+                {loading ? "Preparing PDF..." : "Download PDF"}
+              </button>
+            )}
+          </PDFDownloadLink>
         </div>
 
         {/* Totals */}
@@ -318,30 +460,70 @@ const Rent = () => {
                 key={item._id}
                 className="bg-white rounded-xl shadow p-4 space-y-1"
               >
-                <h3 className="font-semibold text-indigo-600">
-                  {item.propertyName}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-indigo-600">
+                    {item.propertyName}
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setEditId(editId === item._id ? null : item._id);
+                      setUpdateStatus(item?.status);
+                    }}
+                    className="p-1 rounded hover:bg-gray-100"
+                  >
+                    {editId === item._id ? (
+                      <MdClose size={18} className="text-red-500" />
+                    ) : (
+                      <MdEdit size={18} className="text-blue-500" />
+                    )}
+                  </button>
+                </div>
 
                 <p className="text-sm text-gray-600">Month: {item.month}</p>
 
                 <p className="text-sm text-gray-600">
                   Due: {new Date(item.dueDate).toLocaleDateString()}
                 </p>
-
-                <p className="text-sm">
-                  Status:{" "}
-                  <span
-                    className={`font-semibold ${
-                      item.status === "Paid"
-                        ? "text-green-600"
-                        : item.status === "Pending"
-                          ? "text-yellow-600"
-                          : "text-red-600"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </p>
+                {editId === item._id ? (
+                  <div className="text-sm">
+                    Status:
+                    <select
+                      value={updateStatus}
+                      onChange={(e) => setUpdateStatus(e.target.value)}
+                      className="ml-2 border px-2 py-1 rounded"
+                    >
+                      <option value="Paid">Paid</option>
+                      <option value="Unpaid">Unpaid</option>
+                      <option value="Pending">Pending</option>
+                    </select>
+                    <button
+                      disabled={updateStatus === item.status}
+                      onClick={() => handleStatusUpdate(item._id, updateStatus)}
+                      className={`px-2 py-1 rounded text-xs ml-2 ${
+                        updateStatus === item.status
+                          ? "bg-gray-300 cursor-not-allowed"
+                          : "bg-green-600 text-white"
+                      }`}
+                    >
+                      OK
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm">
+                    Status:{" "}
+                    <span
+                      className={`font-semibold ${
+                        item.status === "Paid"
+                          ? "text-green-600"
+                          : item.status === "Pending"
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                      }`}
+                    >
+                      {item.status}
+                    </span>
+                  </p>
+                )}
 
                 {item.notes && (
                   <p className="text-sm text-gray-500">Notes: {item.notes}</p>

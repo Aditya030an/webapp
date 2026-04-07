@@ -14,6 +14,7 @@ const EnquiryForm = () => {
     contactNumber: "",
     email: "",
     chiefComplaint: "",
+    remark:"",
     response: "",
     source: "",
     // paymentStatus: "",
@@ -116,6 +117,7 @@ const EnquiryForm = () => {
           contactNumber: "",
           email: "",
           chiefComplaint: "",
+          remark:"",
           response: "",
           source: "",
         });
@@ -143,6 +145,7 @@ const EnquiryForm = () => {
               name="patientName"
               value={formData.patientName}
               onChange={handleChange}
+              required={true}
             />
             <FormField
               label="Gender"
@@ -151,6 +154,7 @@ const EnquiryForm = () => {
               options={["Male", "Female", "Other"]}
               value={formData.gender}
               onChange={handleChange}
+                 required={true}
             />
             <FormField
               label="Age"
@@ -159,12 +163,14 @@ const EnquiryForm = () => {
               value={formData.age}
               onChange={handleChange}
               min={0}
+                 required={true}
             />
             <FormField
               label="Occupation"
               name="occupation"
               value={formData.occupation}
               onChange={handleChange}
+                 required={true}
             />
             <FormField
               label="Contact Number"
@@ -172,17 +178,26 @@ const EnquiryForm = () => {
               value={formData.contactNumber}
               onChange={handleChange}
               maxLength={10}
+                 required={true}
             />
             <FormField
               label="Email"
               name="email"
               value={formData.email}
               onChange={handleChange}
+                 required={true}
             />
             <FormField
               label="Chief Complaint"
               name="chiefComplaint"
               value={formData.chiefComplaint}
+              onChange={handleChange}
+                 required={true}
+            />
+            <FormField
+              label="Remark"
+              name="remark"
+              value={formData.remark}
               onChange={handleChange}
             />
             <FormField
@@ -192,6 +207,7 @@ const EnquiryForm = () => {
               options={["Pending", "Done", "Deny"]}
               value={formData.response}
               onChange={handleChange}
+                 required={true}
             />
             <FormField
               label="Source"
@@ -200,6 +216,7 @@ const EnquiryForm = () => {
               options={["Walk-in", "Phone", "Referral", "Online"]}
               value={formData.source}
               onChange={handleChange}
+                 required={true}
             />
             {/* <FormField
               label="Payment Status"
@@ -245,7 +262,7 @@ const EnquiryForm = () => {
 
 /* -------------------- FORM FIELD -------------------- */
 const FormField = ({
-  label,
+  label,required,
   name,
   value,
   onChange,
@@ -254,7 +271,9 @@ const FormField = ({
   maxLength , min
 }) => (
   <div>
-    <label className="block mb-1">{label}</label>
+    <label className="block mb-1 flex gap-2 items-center">{label}
+      {required && <p className="text-red-600">*</p>}
+    </label>
     {type === "select" ? (
       <select
         name={name}

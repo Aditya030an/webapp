@@ -8,6 +8,7 @@ const categories = [
   { name: "Rent", path: "rent" },
   { name: "Salary", path: "salary" },
   { name: "Total", path: "total" },
+  { name: "Daily Attendance", path: "daily-attendance" },
 ];
 
 const Reports = () => {

@@ -5,11 +5,16 @@ import InventoryReportPdf from "./pdf/InventoryReportPdf";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 
 const Inventory = () => {
-  const [items, setItems] = useState([{ name: "", quantity: 0, unitPrice: 0 }]);
+  const currentDate = new Date().toISOString().split("T")[0];
+  const [items, setItems] = useState([
+    { name: "", date: currentDate, quantity: 0, unitPrice: 0 },
+  ]);
   const [inventoryData, setInventoryData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
   const [filteredInventory, setFilteredInventory] = useState([]);
+
+  console.log("filterInventory", filteredInventory);
 
   const handleItemChange = (index, field, value) => {
     const updated = [...items];
@@ -19,7 +24,10 @@ const Inventory = () => {
   };
 
   const addItem = () => {
-    setItems([...items, { name: "", quantity: 0, unitPrice: 0 }]);
+    setItems([
+      ...items,
+      { name: "", date: currentDate, quantity: 0, unitPrice: 0 },
+    ]);
   };
 
   const total = items.reduce(
@@ -164,6 +172,7 @@ const Inventory = () => {
             <thead>
               <tr className="bg-gray-200">
                 <th className="p-2">Item Name</th>
+                <th className="p-2">Date</th>
                 <th className="p-2">Quantity</th>
                 <th className="p-2">Unit Price</th>
                 <th className="p-2">Total</th>
@@ -178,6 +187,16 @@ const Inventory = () => {
                       value={item.name}
                       onChange={(e) =>
                         handleItemChange(idx, "name", e.target.value)
+                      }
+                      className="w-full border p-1 rounded"
+                    />
+                  </td>
+                  <td className="p-2">
+                    <input
+                      type="date"
+                      value={item.date}
+                      onChange={(e) =>
+                        handleItemChange(idx, "date", e.target.value)
                       }
                       className="w-full border p-1 rounded"
                     />
@@ -268,11 +287,7 @@ const Inventory = () => {
           </select>
 
           <PDFDownloadLink
-            document={
-              <InventoryReportPdf
-                inventory={filteredInventory}
-              />
-            }
+            document={<InventoryReportPdf inventory={filteredInventory} />}
             fileName={`Inventory_Report_${selectedMonth || "All Month"}_${selectedYear || "All Year"}.pdf`}
           >
             {({ loading }) => (
@@ -305,8 +320,17 @@ const Inventory = () => {
             <h3 className="font-semibold text-gray-800 mb-1">Items:</h3>
             <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
               {order.items.map((item) => (
-                <li key={item._id}>
-                  {item.name} - {item.quantity} pcs x ₹{item.unitPrice}
+                <li key={item._id} className="mb-2">
+                  <div>
+                    {item.name} - {item.quantity} pcs × ₹{item.unitPrice}
+                  </div>
+
+                  <div className="text-xs text-gray-500">
+                    Date:{" "}
+                    {item?.date
+                      ? new Date(item.date).toLocaleDateString("en-IN")
+                      : new Date(order.createdAt).toLocaleDateString("en-IN")}
+                  </div>
                 </li>
               ))}
             </ul>
