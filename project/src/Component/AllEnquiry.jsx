@@ -9,6 +9,7 @@ const AllEnquiry = () => {
 
   const [enquiries, setEnquiries] = useState([]);
   const [activeStatus, setActiveStatus] = useState("all");
+  const [patientStatus, setPatientStatus] = useState("all");
   const [showConvertToPatientForm, setShowConvertToPatientForm] =
     useState(false);
   const [selectedEnquiry, setSelectedEnquiry] = useState(null);
@@ -19,14 +20,6 @@ const AllEnquiry = () => {
 
   // const [role, setRole] = useState("employee");
   const tabs = ["all", "lead", "patient"];
-
-  // useEffect(() => {
-  //   const employee = localStorage.getItem("loginEmployeeData");
-  //   const data = JSON.parse(employee);
-  //   if (data?.personalDetails?.email === import.meta.env.VITE_ADMIN_EMAIL) {
-  //     setRole("admin");
-  //   }
-  // }, []);
 
   const fetchAllEnquiries = async () => {
     try {
@@ -101,6 +94,18 @@ const AllEnquiry = () => {
     } else if (activeStatus === "patient") {
       filtered = filtered.filter((e) => e.enquiryStatus === "patient");
     }
+
+   /* ---- PATIENT STATUS FILTER ---- */
+if (patientStatus !== "all") {
+  filtered = filtered.filter((e) => {
+    const status = e?.patientId?.personalDetails?.patientStatus;
+
+    if (patientStatus === "active") return status === true;
+    if (patientStatus === "inactive") return status === false;
+
+    return true;
+  });
+}
 
     /* ---- SEARCH (Name | Phone | EmployeeId | PatientId) ---- */
     if (searchTerm.trim()) {
@@ -281,6 +286,19 @@ const AllEnquiry = () => {
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
         </select>
+
+        {/* PATIENT STATUS FILTER */}
+{activeStatus === "patient" && (
+  <select
+    value={patientStatus}
+    onChange={(e) => setPatientStatus(e.target.value)}
+    className="px-4 py-2 border rounded w-full md:w-1/4"
+  >
+    <option value="all">All Patients</option>
+    <option value="active">Active</option>
+    <option value="inactive">Inactive</option>
+  </select>
+)}
       </div>
 
       {/* LIST */}
