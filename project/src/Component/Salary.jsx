@@ -39,11 +39,36 @@ const Salary = () => {
   const [editId, setEditId] = useState(null);
   const [updateStatus, setUpdateStatus] = useState(null);
 
-  const employeeOptions = [
-    ...new Set(
-      salaryData.flatMap((entry) => entry.employees.map((emp) => emp.name)),
-    ),
-  ];
+  const [allEmployeeData, setAllEmployeeData] = useState([]);
+
+  const formatMonthValue = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "";
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  };
+
+  const filteredEmployeeOptions = (searchValue) => {
+    return allEmployeeData.filter((emp) =>
+      emp?.personalDetails?.fullName
+        ?.toLowerCase()
+        .includes(searchValue.toLowerCase()),
+    );
+  };
+
+  const handleEmployeeSelect = (index, employee) => {
+    const updated = [...employees];
+
+    updated[index] = {
+      ...updated[index],
+      name: employee?.personalDetails?.fullName || "",
+      role: employee?.personalDetails?.qualification || "",
+     month: formatMonthValue(employee?.personalDetails?.joiningDate),
+    };
+
+    setEmployees(updated);
+    setActiveDropdown(null);
+  };
 
   const fetchSalaryData = async () => {
     try {
@@ -60,8 +85,26 @@ const Salary = () => {
     }
   };
 
+  const fetchAllEmployees = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/employee/getAllEmployee`,
+      );
+
+      const result = await response.json();
+      console.log("Employee data:", result);
+
+      if (result.success && result.employees.length > 0) {
+        setAllEmployeeData(result?.employees);
+      }
+    } catch (error) {
+      console.error("Error fetching employee data:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSalaryData();
+    fetchAllEmployees();
   }, []);
 
   const handleSubmit = async () => {
@@ -69,8 +112,6 @@ const Salary = () => {
       employees,
       totalSalary,
     };
-
-    // console.log("salaryData", salaryData);
 
     try {
       const response = await fetch(
@@ -225,36 +266,32 @@ const Salary = () => {
                         className="w-full border border-gray-300 p-2 rounded"
                       />
 
-                      {/* Dropdown */}
                       {activeDropdown === idx && (
                         <div
                           onClick={(e) => e.stopPropagation()}
                           className="absolute z-10 w-full bg-white border border-gray-200 rounded shadow max-h-40 overflow-y-auto"
                         >
-                          {employeeOptions
-                            .filter((name) =>
-                              name
-                                .toLowerCase()
-                                .includes(emp.name.toLowerCase()),
-                            )
-                            .map((name, i) => (
-                              <div
-                                key={i}
-                                onClick={() => {
-                                  handleChange(idx, "name", name);
-                                  setActiveDropdown(null);
-                                }}
-                                className="px-3 py-2 cursor-pointer hover:bg-blue-100"
-                              >
-                                {name}
-                              </div>
-                            ))}
+                          {filteredEmployeeOptions(emp.name).map((employee) => (
+                            <div
+                              key={employee._id}
+                              onClick={() =>
+                                handleEmployeeSelect(idx, employee)
+                              }
+                              className="px-3 py-2 cursor-pointer hover:bg-blue-100"
+                            >
+                              <p className="font-medium text-sm text-gray-800">
+                                {employee?.personalDetails?.fullName}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {employee?.personalDetails?.qualification ||
+                                  "No qualification"}
+                              </p>
+                            </div>
+                          ))}
 
-                          {employeeOptions.filter((name) =>
-                            name.toLowerCase().includes(emp.name.toLowerCase()),
-                          ).length === 0 && (
+                          {filteredEmployeeOptions(emp.name).length === 0 && (
                             <div className="px-3 py-2 text-gray-400 text-sm">
-                              No results found
+                              No employee found
                             </div>
                           )}
                         </div>
