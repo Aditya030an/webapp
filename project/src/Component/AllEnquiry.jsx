@@ -17,6 +17,7 @@ const AllEnquiry = () => {
   const [sortBy, setSortBy] = useState("newest");
   const [deletingEnquiryId, setDeletingEnquiryId] = useState(null);
   const [updatingPatientId, setUpdatingPatientId] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // const [role, setRole] = useState("employee");
   const tabs = ["all", "lead", "patient"];
@@ -33,6 +34,29 @@ const AllEnquiry = () => {
 
   useEffect(() => {
     fetchAllEnquiries();
+  }, []);
+
+  useEffect(() => {
+    const employeeData = localStorage.getItem("loginEmployeeData");
+
+    if (!employeeData) {
+      setIsAdmin(false);
+      return;
+    }
+
+    try {
+      const employee = JSON.parse(employeeData);
+      const loggedInEmail = employee?.personalDetails?.email
+        ?.trim()
+        ?.toLowerCase();
+      const adminEmail =
+        import.meta.env.VITE_ADMIN_EMAIL?.trim()?.toLowerCase();
+
+      setIsAdmin(loggedInEmail === adminEmail);
+    } catch (error) {
+      console.error("Failed to parse loginEmployeeData:", error);
+      setIsAdmin(false);
+    }
   }, []);
 
   // const fetchAllEmployees = async () => {
@@ -95,17 +119,17 @@ const AllEnquiry = () => {
       filtered = filtered.filter((e) => e.enquiryStatus === "patient");
     }
 
-   /* ---- PATIENT STATUS FILTER ---- */
-if (patientStatus !== "all") {
-  filtered = filtered.filter((e) => {
-    const status = e?.patientId?.personalDetails?.patientStatus;
+    /* ---- PATIENT STATUS FILTER ---- */
+    if (patientStatus !== "all") {
+      filtered = filtered.filter((e) => {
+        const status = e?.patientId?.personalDetails?.patientStatus;
 
-    if (patientStatus === "active") return status === true;
-    if (patientStatus === "inactive") return status === false;
+        if (patientStatus === "active") return status === true;
+        if (patientStatus === "inactive") return status === false;
 
-    return true;
-  });
-}
+        return true;
+      });
+    }
 
     /* ---- SEARCH (Name | Phone | EmployeeId | PatientId) ---- */
     if (searchTerm.trim()) {
@@ -288,17 +312,17 @@ if (patientStatus !== "all") {
         </select>
 
         {/* PATIENT STATUS FILTER */}
-{activeStatus === "patient" && (
-  <select
-    value={patientStatus}
-    onChange={(e) => setPatientStatus(e.target.value)}
-    className="px-4 py-2 border rounded w-full md:w-1/4"
-  >
-    <option value="all">All Patients</option>
-    <option value="active">Active</option>
-    <option value="inactive">Inactive</option>
-  </select>
-)}
+        {activeStatus === "patient" && (
+          <select
+            value={patientStatus}
+            onChange={(e) => setPatientStatus(e.target.value)}
+            className="px-4 py-2 border rounded w-full md:w-1/4"
+          >
+            <option value="all">All Patients</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        )}
       </div>
 
       {/* LIST */}
@@ -318,17 +342,19 @@ if (patientStatus !== "all") {
               key={entry._id}
               className="relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition"
             >
-              <button
-                className={`absolute top-2 right-2 cursor-pointer ${deletingEnquiryId === entry._id ? "cursor-not-allowed" : "cursor-pointer"} `}
-                disabled={deletingEnquiryId === entry._id}
-                onClick={() => handleDeleteEnquiry(entry._id)}
-              >
-                {deletingEnquiryId === entry._id ? (
-                  <AiOutlineLoading3Quarters className="text-2xl text-red-500 animate-spin" />
-                ) : (
-                  <MdDelete className="text-2xl text-red-500 hover:text-red-600" />
-                )}
-              </button>
+              {isAdmin && (
+                <button
+                  className={`absolute top-2 right-2 cursor-pointer ${deletingEnquiryId === entry._id ? "cursor-not-allowed" : "cursor-pointer"} `}
+                  disabled={deletingEnquiryId === entry._id}
+                  onClick={() => handleDeleteEnquiry(entry._id)}
+                >
+                  {deletingEnquiryId === entry._id ? (
+                    <AiOutlineLoading3Quarters className="text-2xl text-red-500 animate-spin" />
+                  ) : (
+                    <MdDelete className="text-2xl text-red-500 hover:text-red-600" />
+                  )}
+                </button>
+              )}
               {/* {console.log("entry" , entry)} */}
               {/* Header */}
               <div className="mb-2">
@@ -356,25 +382,26 @@ if (patientStatus !== "all") {
                             : "Inactive"}
                         </span>
                       </p>
-
-                      <select
-                        value={
-                          entry?.patientId?.personalDetails?.patientStatus
-                            ? "true"
-                            : "false"
-                        }
-                        disabled={updatingPatientId === entry?.patientId?._id}
-                        onChange={(e) =>
-                          handlePatientStatusChange(
-                            entry?.patientId?._id,
-                            e.target.value === "true",
-                          )
-                        }
-                        className="px-3 py-1.5 border rounded-md text-sm"
-                      >
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                      </select>
+                      {isAdmin && (
+                        <select
+                          value={
+                            entry?.patientId?.personalDetails?.patientStatus
+                              ? "true"
+                              : "false"
+                          }
+                          disabled={updatingPatientId === entry?.patientId?._id}
+                          onChange={(e) =>
+                            handlePatientStatusChange(
+                              entry?.patientId?._id,
+                              e.target.value === "true",
+                            )
+                          }
+                          className="px-3 py-1.5 border rounded-md text-sm"
+                        >
+                          <option value="true">Active</option>
+                          <option value="false">Inactive</option>
+                        </select>
+                      )}
                     </div>
                   </div>
                 )}
