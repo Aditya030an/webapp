@@ -223,4 +223,4 @@ const deleteEnquiryById = async (req, res) => {
   }
 };
 
-export { createEnquiry, getEnquiry , getPatientAttendanceEnquiry , getPersonalDetails , updatedEnquiry , deleteEnquiryById };
+export { createEnquiry, getEnquiry , getPatientAttendanceEnquiry , getPersonalDetails , updatedEnquiry  , deleteEnquiryById };

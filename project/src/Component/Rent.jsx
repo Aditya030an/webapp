@@ -4,6 +4,7 @@ import html2pdf from "html2pdf.js";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import RentReportPdf from "../Component/pdf/RentReportPdf.jsx";
 import { MdEdit, MdClose } from "react-icons/md";
+import { exportToExcel } from "../utils/exportToExcel";
 
 const Rent = () => {
   const [propertyName, setPropertyName] = useState("");
@@ -112,7 +113,7 @@ const Rent = () => {
 
       const result = await response.json();
 
-      console.log('result' , result);
+      console.log("result", result);
 
       if (result.success) {
         fetchRentData(); // refresh
@@ -120,7 +121,7 @@ const Rent = () => {
         setUpdateStatus(null);
       } else {
         alert(result.message);
-          setEditId(null);
+        setEditId(null);
         setUpdateStatus(null);
       }
     } catch (error) {
@@ -221,6 +222,23 @@ const Rent = () => {
     };
 
     html2pdf().set(options).from(content).save();
+  };
+
+  const downloadRentExcel = () => {
+    const rows = filteredData.map((item) => ({
+      Property: item.propertyName,
+      Month: item.month,
+      "Due Date": new Date(item.dueDate).toLocaleDateString("en-IN"),
+      Status: item.status,
+      Amount: item.amount,
+      Notes: item.notes || "-",
+    }));
+
+    exportToExcel({
+      data: rows,
+      fileName: `Rent_Report_${selectedMonth || "All"}_${selectedYear || "All_Years"}`,
+      sheetName: "Rent",
+    });
   };
 
   return (
@@ -410,34 +428,49 @@ const Rent = () => {
             </select>
           </div>
 
-          <PDFDownloadLink
-            document={
-              <RentReportPdf
-                rents={filteredData}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                selectedStatus={selectedStatus}
-                totals={{
-                  total: filteredTotal,
-                  paid: paidTotal,
-                  unpaid: unpaidTotal,
-                  pending: pendingTotal,
-                }}
-              />
-            }
-            fileName={`Rent_Report_${selectedMonth || "All"}_${
-              selectedYear || "Years"
-            }.pdf`}
-          >
-            {({ loading }) => (
+         <div className="flex items-center gap-3">
               <button
-                className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                disabled={loading}
+                onClick={downloadRentExcel}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
               >
-                {loading ? "Preparing PDF..." : "Download PDF"}
+                Download Excel
               </button>
-            )}
-          </PDFDownloadLink>
+
+              <PDFDownloadLink
+                document={
+                  <RentReportPdf
+                    rents={filteredData}
+                    selectedMonth={selectedMonth}
+                    selectedYear={selectedYear}
+                    selectedStatus={selectedStatus}
+                    totals={{
+                      total: filteredTotal,
+                      paid: paidTotal,
+                      unpaid: unpaidTotal,
+                      pending: pendingTotal,
+                    }}
+                  />
+                }
+                fileName={`Rent_Report_${selectedMonth || "All"}_${selectedYear || "Years"}.pdf`}
+              >
+                {({ loading }) => (
+                  <button
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg"
+                    disabled={loading}
+                  >
+                    {loading ? "Preparing PDF..." : "Download PDF"}
+                  </button>
+                )}
+              </PDFDownloadLink>
+            </div>
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <h1 className="text-2xl font-bold text-gray-800">
+              Rent Management
+            </h1>
+
+            
+          </div>
         </div>
 
         {/* Totals */}

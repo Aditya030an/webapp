@@ -5,7 +5,7 @@ import autoTable from "jspdf-autotable";
 import html2pdf from "html2pdf.js";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ExpenseReportPdf from "../Component/pdf/ExpenseReportPdf.jsx";
-
+import { exportToExcel } from "../utils/exportToExcel";
 
 const Expenses = () => {
   const [date, setDate] = useState("");
@@ -200,6 +200,26 @@ const Expenses = () => {
     html2pdf().set(opt).from(content).save();
   };
 
+  const downloadExpensesExcel = () => {
+    const rows = filteredExpenses.flatMap((expense) =>
+      expense.expenses.map((item, index) => ({
+        Date:
+          index === 0 ? new Date(expense.date).toLocaleDateString("en-IN") : "",
+        Category: index === 0 ? expense.category : "",
+        Description: item.description,
+        Amount: item.amount,
+        Notes: index === 0 ? expense.notes || "-" : "",
+        Total: index === 0 ? expense.total : "",
+      })),
+    );
+
+    exportToExcel({
+      data: rows,
+      fileName: `Expense_Report_${selectedMonth || "All_Months"}_${selectedYear || "All_Years"}`,
+      sheetName: "Expenses",
+    });
+  };
+
   return (
     <div>
       <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
@@ -350,35 +370,34 @@ const Expenses = () => {
             </select>
           </div>
         </div>
-        <div className="flex items-center justify-between">
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={downloadExpensesExcel}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Download Excel
+          </button>
+
           <PDFDownloadLink
             document={
               <ExpenseReportPdf
                 expenses={filteredExpenses}
-                month={
-                  selectedMonth
-                    ? new Date(0, selectedMonth - 1).toLocaleString("default", {
-                        month: "long",
-                      })
-                    : null
-                }
-                year={selectedYear}
+                month={selectedMonth || "All Months"}
+                year={selectedYear || "All Years"}
                 total={filteredTotal}
               />
             }
-            fileName={`Expense_Report_${selectedMonth || "All"}_${selectedYear || "All"}.pdf`}
+            fileName={`Expense_Report_${selectedMonth || "All_Months"}_${selectedYear || "All_Years"}.pdf`}
           >
             {({ loading }) => (
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                disabled={loading}
-              >
+              <button className="bg-green-600 text-white px-4 py-2 rounded-lg">
                 {loading ? "Preparing PDF..." : "Download PDF"}
               </button>
             )}
           </PDFDownloadLink>
 
-          <div className=" text-lg font-bold text-green-700 px-4">
+          <div className="text-lg font-bold text-green-700 px-4">
             Monthly Total: ₹{filteredTotal}
           </div>
         </div>

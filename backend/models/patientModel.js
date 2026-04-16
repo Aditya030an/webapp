@@ -38,6 +38,10 @@ const patientSchema = new mongoose.Schema(
         ref: "enquiry",
         required: true,
       },
+      patientStatus:{
+        type:Boolean,
+        default:true,
+      },
     },
     //   this physiotherapist is made by the owner with status (owner , junior)
     physioAssigned: {

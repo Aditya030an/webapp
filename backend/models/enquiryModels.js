@@ -74,6 +74,10 @@ const enquirySchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Patient",
   },
+  patientStatus:{
+    type: Boolean,
+    default:true,
+  },
   musculoskeletalFormId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "MusculoskeletalForm", // Reference to MusculoskeletalForm

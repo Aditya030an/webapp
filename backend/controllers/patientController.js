@@ -10,7 +10,7 @@ const generatePatientCode = async () => {
   // Get patient with highest patientId number
   const lastPatient = await Patient.findOne(
     {},
-    { "personalDetails.patientId": 1 }
+    { "personalDetails.patientId": 1 },
   )
     .sort({ "personalDetails.patientId": -1 })
     .lean();
@@ -26,8 +26,6 @@ const generatePatientCode = async () => {
 
   return `MR-${String(nextNumber).padStart(5, "0")}/${year}`;
 };
-
-
 
 const createPatient = async (req, res) => {
   try {
@@ -160,4 +158,52 @@ const getPatientById = async (req, res) => {
   }
 };
 
-export { createPatient, getAllPatient, getPatientById };
+const updatedPatientStatus = async (req, res) => {
+  try {
+    const { patientId, patientStatus } = req.body;
+
+    if (!patientId) {
+      return res.status(400).json({
+        success: false,
+        message: "patientId is required",
+      });
+    }
+
+    if (typeof patientStatus !== "boolean") {
+      return res.status(400).json({
+        success: false,
+        message: "patientStatus must be true or false",
+      });
+    }
+
+    const patient = await Patient.findByIdAndUpdate(
+      patientId,
+      {
+        $set:{
+          "personalDetails.patientStatus":patientStatus,
+        },
+      },
+      { new: true },
+    );
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        message: "Patient not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Patient status updated successfully",
+      patient,
+    });
+  } catch (err) {
+    console.error("Error updating patient status:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while updating patient status",
+    });
+  }
+};
+
+export { createPatient, getAllPatient, getPatientById, updatedPatientStatus };

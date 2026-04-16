@@ -15,6 +15,7 @@ const AllEnquiry = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [deletingEnquiryId, setDeletingEnquiryId] = useState(null);
+  const [updatingPatientId, setUpdatingPatientId] = useState(null);
 
   // const [role, setRole] = useState("employee");
   const tabs = ["all", "lead", "patient"];
@@ -127,6 +128,11 @@ const AllEnquiry = () => {
   };
 
   const handleConvertToPatient = async (data) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to convert this enquiry into patient ?",
+    );
+
+    if (!confirmDelete) return;
     try {
       const payload = {
         ...data,
@@ -154,6 +160,46 @@ const AllEnquiry = () => {
       }
     } catch (error) {
       console.error("Convert to patient failed", error);
+    }
+  };
+
+  const handlePatientStatusChange = async (patientId, patientStatus) => {
+    try {
+      const confirmDelete = window.confirm(
+        `Are you sure you want to update the patient status from ${!patientStatus ? "Active" : "In-Active"} to ${patientStatus ? "Active" : "In-active "} ?`,
+      );
+
+      if (!confirmDelete) return;
+
+      setUpdatingPatientId(patientId);
+
+      const response = await fetch(
+        `${backendURL}/api/patient/updatePatientStatus`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            patientId,
+            patientStatus,
+          }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (result?.success) {
+        alert("Patient status updated successfully");
+        fetchAllEnquiries();
+      } else {
+        alert(result?.message || "Failed to update status");
+      }
+    } catch (error) {
+      console.error("Error updating patient status:", error);
+      alert("Something went wrong");
+    } finally {
+      setUpdatingPatientId(null);
     }
   };
 
@@ -269,12 +315,50 @@ const AllEnquiry = () => {
               {/* Header */}
               <div className="mb-2">
                 {entry.enquiryStatus === "patient" && (
-                  <p className="text-xs text-gray-500">
-                    Patient ID:{" "}
-                    <span className="font-medium">
-                      {entry.patientId?.personalDetails?.patientId}
-                    </span>
-                  </p>
+                  <div className="mb-2 space-y-2">
+                    <p className="text-xs text-gray-500">
+                      Patient ID:{" "}
+                      <span className="font-medium">
+                        {entry.patientId?.personalDetails?.patientId}
+                      </span>
+                    </p>
+
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-medium">
+                        Status:{" "}
+                        <span
+                          className={
+                            entry?.patientId?.personalDetails?.patientStatus
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }
+                        >
+                          {entry?.patientId?.personalDetails?.patientStatus
+                            ? "Active"
+                            : "Inactive"}
+                        </span>
+                      </p>
+
+                      <select
+                        value={
+                          entry?.patientId?.personalDetails?.patientStatus
+                            ? "true"
+                            : "false"
+                        }
+                        disabled={updatingPatientId === entry?.patientId?._id}
+                        onChange={(e) =>
+                          handlePatientStatusChange(
+                            entry?.patientId?._id,
+                            e.target.value === "true",
+                          )
+                        }
+                        className="px-3 py-1.5 border rounded-md text-sm"
+                      >
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                    </div>
+                  </div>
                 )}
 
                 <h3 className="font-semibold text-gray-800 text-base">

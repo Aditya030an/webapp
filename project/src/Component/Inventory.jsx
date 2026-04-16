@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import InventoryReportPdf from "./pdf/InventoryReportPdf";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { exportToExcel } from "../utils/exportToExcel";
 
 const Inventory = () => {
   const currentDate = new Date().toISOString().split("T")[0];
@@ -160,6 +161,28 @@ const Inventory = () => {
       .save();
   };
 
+  const downloadInventoryExcel = () => {
+    const rows = filteredInventory.flatMap((entry) =>
+      entry.items.map((item, index) => ({
+        Date:
+          index === 0
+            ? new Date(entry.createdAt).toLocaleDateString("en-IN")
+            : "",
+        "Item Name": item.name,
+        Qty: item.quantity,
+        "Unit Price": item.unitPrice,
+        Subtotal: item.quantity * item.unitPrice,
+        "Entry Total": index === 0 ? entry.total : "",
+      })),
+    );
+
+    exportToExcel({
+      data: rows,
+      fileName: `Inventory_Report_${selectedMonth || "All_Months"}_${selectedYear || "All_Years"}`,
+      sheetName: "Inventory",
+    });
+  };
+
   return (
     <div>
       <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
@@ -286,20 +309,28 @@ const Inventory = () => {
             })}
           </select>
 
+          <div className="flex items-center gap-3">
+          <button
+            onClick={downloadInventoryExcel}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          >
+            Download Excel
+          </button>
+
           <PDFDownloadLink
             document={<InventoryReportPdf inventory={filteredInventory} />}
-            fileName={`Inventory_Report_${selectedMonth || "All Month"}_${selectedYear || "All Year"}.pdf`}
+            fileName={`Inventory_Report_${selectedMonth || "All_Month"}_${selectedYear || "All_Year"}.pdf`}
           >
             {({ loading }) => (
-              <button
-                className="bg-green-600 text-white px-4 py-2 rounded-lg"
-                disabled={loading}
-              >
+              <button className="bg-green-600 text-white px-4 py-2 rounded-lg">
                 {loading ? "Preparing PDF..." : "Download PDF"}
               </button>
             )}
           </PDFDownloadLink>
         </div>
+        </div>
+
+        
 
         <div className="text-right px-6 text-green-700 font-bold text-lg">
           Filtered Inventory Value: ₹{filteredTotal.toFixed(2)}

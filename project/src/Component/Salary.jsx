@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import html2pdf from "html2pdf.js";
 import SalaryReportPdf from "./pdf/SalaryReportPdf";
 import { MdEdit, MdClose } from "react-icons/md";
+import { exportToExcel } from "../utils/exportToExcel";
 
 const Salary = () => {
   const [employees, setEmployees] = useState([
@@ -98,31 +99,31 @@ const Salary = () => {
     console.log("ntryIde", entryId);
     console.log("empId", empId);
     console.log("paid", paid);
-  try {
-    const response = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/report/salary/${entryId}/${empId}`,
-      {
-        method: "PUT", // ✅ using PUT now
-        headers: {
-          "Content-Type": "application/json",
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/salary/${entryId}/${empId}`,
+        {
+          method: "PUT", // ✅ using PUT now
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ paid }),
         },
-        body: JSON.stringify({ paid }),
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        fetchSalaryData();
+        setEditId(null);
+        setUpdateStatus(null);
+      } else {
+        alert("Failed to update status");
       }
-    );
-
-    const result = await response.json();
-
-    if (result.success) {
-      fetchSalaryData();
-      setEditId(null);
-      setUpdateStatus(null);
-    } else {
-      alert("Failed to update status");
+    } catch (error) {
+      console.error(error);
     }
-  } catch (error) {
-    console.error(error);
-  }
-};
+  };
 
   const filteredEntries = salaryData.filter((entry) => {
     return entry.employees.some((emp) => {
@@ -163,6 +164,29 @@ const Salary = () => {
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
+
+  const downloadSalaryExcel = () => {
+    const rows = filteredEntries.flatMap((entry) =>
+      entry.employees.map((emp, index) => ({
+        Date:
+          index === 0
+            ? new Date(entry.createdAt).toLocaleDateString("en-IN")
+            : "",
+        Name: emp.name,
+        Role: emp.role,
+        Month: emp.month,
+        Salary: emp.salary,
+        Status: emp.paid ? "Paid" : "Unpaid",
+        "Entry Total": index === 0 ? entry.totalSalary : "",
+      })),
+    );
+
+    exportToExcel({
+      data: rows,
+      fileName: `Salary_Report_${selectedMonth || "All"}_${selectedYear || "All"}`,
+      sheetName: "Salary",
+    });
+  };
 
   return (
     <div>
@@ -338,14 +362,23 @@ const Salary = () => {
                 );
               })}
             </select>
-            <SalaryReportPdf
-              filteredEntries={filteredEntries}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              totalFiltered={totalFiltered}
-              paidTotal={paidTotal}
-              unpaidTotal={unpaidTotal}
-            />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={downloadSalaryExcel}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
+              >
+                Download Excel
+              </button>
+
+              <SalaryReportPdf
+                filteredEntries={filteredEntries}
+                selectedMonth={selectedMonth}
+                selectedYear={selectedYear}
+                totalFiltered={totalFiltered}
+                paidTotal={paidTotal}
+                unpaidTotal={unpaidTotal}
+              />
+            </div>
           </div>
           <div className="text-right font-bold text-blue-700 mb-2">
             Monthly Total: ₹{totalFiltered} | Paid: ₹{paidTotal} | Unpaid: ₹

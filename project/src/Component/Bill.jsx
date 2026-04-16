@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { FiDownload } from "react-icons/fi";
 import AllBillPdf from "./pdf/AllBillPdf";
+import { exportToExcel } from "../utils/exportToExcel";
 
 import html2pdf from "html2pdf.js";
 
@@ -193,6 +194,68 @@ const Bill = () => {
     };
 
     html2pdf().set(opt).from(content).save();
+  };
+
+  const downloadBillsExcel = () => {
+    const rows = filteredBills.flatMap((bill) =>
+      bill.items.map((item, index) => ({
+        "Bill No": index === 0 ? bill.billNumber : "",
+        Date:
+          index === 0 ? new Date(bill.date).toLocaleDateString("en-IN") : "",
+        Customer: index === 0 ? bill.customer : "",
+        Service: index === 0 ? `${bill.billType} Service` : "",
+        "Payment Mode": index === 0 ? bill.status : "",
+        Item: item.name,
+        Qty: item.qty,
+        Price: item.price,
+        Subtotal: item.qty * item.price,
+        Total: index === 0 ? bill.total : "",
+        Advance: index === 0 ? (bill.advancePayment ?? 0) : "",
+        Balance: index === 0 ? bill.total - (bill.advancePayment ?? 0) : "",
+      })),
+    );
+
+    exportToExcel({
+      data: rows,
+      fileName: `Bills_Report_${new Date().toISOString().slice(0, 10)}`,
+      sheetName: "Bills",
+    });
+  };
+
+  const downloadMonthlyBillsExcel = () => {
+    if (!selectedMonth || !selectedYear) {
+      return alert("Please select month and year");
+    }
+
+    const selectedFilteredBills = filteredBills.filter((bill) => {
+      const date = new Date(bill.date);
+      return (
+        date.getMonth() + 1 === Number(selectedMonth) &&
+        date.getFullYear() === Number(selectedYear)
+      );
+    });
+
+    const rows = selectedFilteredBills.flatMap((bill) =>
+      bill.items.map((item, index) => ({
+        "Bill No": index === 0 ? bill.billNumber : "",
+        Date:
+          index === 0 ? new Date(bill.date).toLocaleDateString("en-IN") : "",
+        Customer: index === 0 ? bill.customer : "",
+        Service: index === 0 ? `${bill.billType} Service` : "",
+        "Payment Mode": index === 0 ? bill.status : "",
+        Item: item.name,
+        Qty: item.qty,
+        Price: item.price,
+        Subtotal: item.qty * item.price,
+        Total: index === 0 ? bill.total : "",
+      })),
+    );
+
+    exportToExcel({
+      data: rows,
+      fileName: `Monthly_Bills_Report_${selectedMonth}_${selectedYear}`,
+      sheetName: "Monthly Bills",
+    });
   };
 
   // Check if there are any monthly expenses to display
@@ -401,9 +464,17 @@ const Bill = () => {
               {selectedMonth && selectedYear && (
                 <button
                   onClick={generatePDF}
-                  className=" px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  className=" px-4 py-2 bg-green-600 cursor-pointer text-white rounded-md hover:bg-green-700"
                 >
                   Download Monthly Report PDF
+                </button>
+              )}
+              {selectedMonth && selectedYear && (
+                <button
+                  onClick={downloadMonthlyBillsExcel}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  Download Monthly Report Excel
                 </button>
               )}
             </div>
@@ -411,9 +482,20 @@ const Bill = () => {
         </div>
       </div>
 
-      <div className="flex justify-end px-4 mb-4">
+      {/* <div className="flex justify-end px-4 mb-4">
         <DownloadBillPdfButton filteredBills={filteredBills} />
-      </div>
+      </div> */}
+
+      <div className="flex justify-end gap-3 px-4 mb-4">
+                  <button
+                    onClick={downloadBillsExcel}
+                    className="flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+                  >
+                    Download Bills Excel
+                  </button>
+
+                  <DownloadBillPdfButton filteredBills={filteredBills} />
+                </div>
 
       {/* Bills Display */}
 
