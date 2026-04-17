@@ -185,7 +185,6 @@ const EnquiryForm = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-                 required={true}
             />
             <FormField
               label="Chief Complaint"

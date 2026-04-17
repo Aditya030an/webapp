@@ -36,7 +36,6 @@ const enquirySchema = new mongoose.Schema({
   },
   remark: {
     type: String,
-    required: true,
   },
   response: {
     type: String,
