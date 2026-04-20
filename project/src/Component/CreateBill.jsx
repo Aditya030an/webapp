@@ -24,8 +24,10 @@ const CreateBill = () => {
   const [items, setItems] = useState([{ name: "", qty: 1, price: 0 }]);
   const [advancePayment, setAdvancePayment] = useState(0);
   const [paymentStatus, setPaymentStatus] = useState("Unpaid");
+  const [discount, setDiscount] = useState(0);
 
   const [billData, setBillData] = useState([]);
+  const [createBillLoading, setCreateBillLoading] = useState(false);
 
   const [review, setReview] = useState(false);
   const [reviewBill, setReviewBill] = useState(null);
@@ -111,7 +113,7 @@ const CreateBill = () => {
       status,
       paymentStatus,
       items,
-      total,
+      total: total - discount,
       advancePayment,
       amountInWallet,
     };
@@ -122,6 +124,8 @@ const CreateBill = () => {
     };
 
     console.log("inside handleSubmit", formData);
+
+    setCreateBillLoading(true);
 
     try {
       const response = await fetch(
@@ -148,10 +152,14 @@ const CreateBill = () => {
         setItems([{ name: "", qty: 1, price: 0 }]);
         setAdvancePayment(0);
         navigate(`/PatientDetails/${patient_id}`);
+      } else {
+        alert(result?.message || "Failed to submit bill");
       }
     } catch (error) {
       console.error("Error submitting bill:", error);
       alert("Failed to submit bill");
+    } finally {
+      setCreateBillLoading(false);
     }
   };
 
@@ -195,7 +203,6 @@ const CreateBill = () => {
                   <option value="Cash">Cash</option>
                   <option value="Online">Online</option>
                 </select>
-                
               </div>
             </div>
 
@@ -233,9 +240,9 @@ const CreateBill = () => {
                 />
               </div>
               <div>
-
-              <select
-                  className="px-4 py-1 cursor-pointer rounded-full text-sm bg-gray-100 border border-gray-300"
+                <label className="text-gray-500 block">Payment Status</label>
+                <select
+                  className="px-4 py-1 mt-2 cursor-pointer rounded-full text-sm bg-gray-100 border border-gray-300"
                   value={paymentStatus}
                   onChange={(e) => setPaymentStatus(e.target.value)}
                 >
@@ -327,12 +334,45 @@ const CreateBill = () => {
                 </span>
               </div>
 
-              {/* Total Amount */}
+              {/* Actual Bill Amount */}
+              <div className="flex items-center justify-between text-md text-green-600">
+                <span>Actual Bill Amount</span>
+                <span className="text-lg font-semibold text-green-500">
+                  ₹
+                  {total.toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-md text-red-600">
+                <span>Discount Amount</span>
+                <input
+                  type="number"
+                  placeholder="Enter discount"
+                  min={0}
+                  max={total}
+                  value={discount}
+                  onChange={(e) => {
+                    if (e.target.value > total) return;
+                    // Number(setDiscount(e.target.value));
+                    setDiscount(e.target.value);
+                  }}
+                  className="rounded border border-gray-300 px-3 py-1 text-md focus:border-black focus:outline-none"
+                />
+                <span className="text-lg font-semibold text-red-500">
+                  - ₹
+                  {(discount || 0).toLocaleString("en-IN", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>Total Amount</span>
                 <span className="text-lg font-semibold text-gray-900">
                   ₹
-                  {total.toLocaleString("en-IN", {
+                  {(total - discount).toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -347,7 +387,6 @@ const CreateBill = () => {
                 <input
                   type="number"
                   min="0"
-                  // max={total}
                   value={advancePayment}
                   onChange={(e) => {
                     // if (e.target.value > total) return;
@@ -380,10 +419,14 @@ const CreateBill = () => {
                 </span>
                 <span className="text-xl font-bold text-black">
                   ₹
-                  {total - (Number(advancePayment) + amountInWallet) < 0
+                  {total -
+                    discount -
+                    (Number(advancePayment) + amountInWallet) <
+                  0
                     ? 0
                     : (
                         total -
+                        discount -
                         (Number(advancePayment) + amountInWallet)
                       ).toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
@@ -399,12 +442,15 @@ const CreateBill = () => {
                 </span>
                 <span className="text-md text-black">
                   ₹
-                  {total - (Number(advancePayment) + amountInWallet) > 0
+                  {total -
+                    discount -
+                    (Number(advancePayment) + amountInWallet) >
+                  0
                     ? 0
                     : (
                         Number(advancePayment) +
                         amountInWallet -
-                        total
+                        (total - discount)
                       ).toLocaleString("en-IN", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -428,6 +474,7 @@ const CreateBill = () => {
                     paymentStatus,
                     items,
                     total,
+                    discount,
                     advancePayment,
                     amountInWallet,
                   });
@@ -442,9 +489,10 @@ const CreateBill = () => {
             <div className="max-w-3xl mx-auto flex justify-end space-x-4 mt-6">
               <button
                 onClick={handleSubmit}
+                disabled={createBillLoading}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg"
               >
-                Save
+                {createBillLoading ? "Saving..." : "Save"}
               </button>
 
               <PDFDownloadLink
@@ -458,7 +506,7 @@ const CreateBill = () => {
                       status,
                       paymentStatus,
                       items,
-                      total,
+                      total: total - discount,
                       advancePayment,
                       amountInWallet,
                     }}

@@ -60,7 +60,12 @@ const BillPdf = ({ bill, patient }) => {
   const dueAmount = Math.max(0, bill.total - bill.advancePayment);
 
   return (
-    <PdfTemplate showHeader={false}>
+    <PdfTemplate
+      showHeader={true}
+      showRightHeaderContent={false}
+      showSignature={false}
+      showFooter={true}
+    >
       {/* ===== Patient Details ===== */}
       <View style={styles.section}>
         <Text style={styles.title}>Patient Details</Text>
@@ -68,8 +73,7 @@ const BillPdf = ({ bill, patient }) => {
         <View style={styles.grid}>
           <View style={styles.col}>
             <Text style={styles.row}>
-              <Text style={styles.label}>Patient ID:</Text>{" "}
-              {patient.patientId}
+              <Text style={styles.label}>Patient ID:</Text> {patient.patientId}
             </Text>
           </View>
 
@@ -93,8 +97,7 @@ const BillPdf = ({ bill, patient }) => {
 
           <View style={styles.col}>
             <Text style={styles.row}>
-              <Text style={styles.label}>Contact:</Text>{" "}
-              {patient.contactNumber}
+              <Text style={styles.label}>Contact:</Text> {patient.contactNumber}
             </Text>
           </View>
 
@@ -134,7 +137,8 @@ const BillPdf = ({ bill, patient }) => {
           <Text style={styles.label}>Payment Mode:</Text> {bill.status}
         </Text>
         <Text style={styles.row}>
-          <Text style={styles.label}>Payment Status:</Text> {bill?.paymentStatus}
+          <Text style={styles.label}>Payment Status:</Text>{" "}
+          {bill?.paymentStatus}
         </Text>
       </View>
 
@@ -152,9 +156,7 @@ const BillPdf = ({ bill, patient }) => {
             <Text style={styles.td}>{item.name}</Text>
             <Text style={styles.td}>{item.qty}</Text>
             <Text style={styles.td}>Rs. {item.price}</Text>
-            <Text style={styles.td}>
-              Rs. {item.qty * item.price}
-            </Text>
+            <Text style={styles.td}>Rs. {item.qty * item.price}</Text>
           </View>
         ))}
       </View>
@@ -177,9 +179,11 @@ const BillPdf = ({ bill, patient }) => {
 
         <Text style={styles.row}>
           <Text style={styles.label}>
-            {
-              bill?.paymentStatus === "Unpaid" ? "Due Amount" : "Received Amount"
-            }</Text> Rs. {dueAmount}
+            {bill?.paymentStatus === "Unpaid"
+              ? "Due Amount"
+              : "Received Amount"}
+          </Text>{" "}
+          Rs. {dueAmount}
         </Text>
 
         {bill.amountInWallet > 0 && (

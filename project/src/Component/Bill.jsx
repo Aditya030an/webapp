@@ -3,11 +3,11 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import { FiDownload } from "react-icons/fi";
 import AllBillPdf from "./pdf/AllBillPdf";
 import { exportToExcel } from "../utils/exportToExcel";
-
 import html2pdf from "html2pdf.js";
 
 const Bill = () => {
-  const [filterStatus, setFilterStatus] = useState("All");
+  const [paymentModeFilter, setPaymentModeFilter] = useState("All");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("All");
   const [serviceTypeFilter, setServiceTypeFilter] = useState("All");
 
   const [billData, setBillData] = useState([]);
@@ -17,10 +17,10 @@ const Bill = () => {
   const fetchBillData = async () => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/bill`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/report/bill`
       );
       const result = await response.json();
-      // console.log("Bill data:", result);
+
       if (result.success && result.data.length > 0) {
         setBillData(result.data);
       }
@@ -32,18 +32,18 @@ const Bill = () => {
   useEffect(() => {
     fetchBillData();
   }, []);
-  // console.log("billData", billData);
 
-  const handleFilter = (status) => {
-    setFilterStatus(status);
-  };
-
-  // Filter bills based on status and service type
   const filteredBills = billData.filter((bill) => {
     const serviceMatch =
       serviceTypeFilter === "All" ? true : bill.billType === serviceTypeFilter;
-    const paymentMatch =
-      filterStatus === "All" ? true : bill.status === filterStatus;
+
+    const paymentModeMatch =
+      paymentModeFilter === "All" ? true : bill.status === paymentModeFilter;
+
+    const paymentStatusMatch =
+      paymentStatusFilter === "All"
+        ? true
+        : bill.paymentStatus === paymentStatusFilter;
 
     if (selectedMonth && selectedYear) {
       const billDate = new Date(bill.date);
@@ -51,20 +51,30 @@ const Bill = () => {
         billDate.getMonth() + 1 === Number(selectedMonth) &&
         billDate.getFullYear() === Number(selectedYear) &&
         serviceMatch &&
-        paymentMatch
+        paymentModeMatch &&
+        paymentStatusMatch
       );
     }
-    return serviceMatch && paymentMatch;
+
+    return serviceMatch && paymentModeMatch && paymentStatusMatch;
   });
 
-  // Calculate total expense for filtered bills
   const totalExpense = filteredBills.reduce((sum, bill) => sum + bill.total, 0);
 
-  // Calculate monthly expenses (group by month-year string)
+  const totalPaidAmount = filteredBills
+    .filter((bill) => bill.paymentStatus === "Paid")
+    .reduce((sum, bill) => sum + (bill.advancePayment ?? 0), 0);
+
+  const totalUnpaidAmount = filteredBills
+    .filter((bill) => bill.paymentStatus === "Unpaid")
+    .reduce(
+      (sum, bill) => sum + Math.max(0, bill.total - (bill.advancePayment ?? 0)),
+      0
+    );
+
   const monthlyExpenses = filteredBills.reduce((acc, bill) => {
     if (!bill.date) return acc;
     const d = new Date(bill.date);
-    // Format like: Jan 2025
     const monthYear = d.toLocaleString("default", {
       month: "short",
       year: "numeric",
@@ -74,9 +84,8 @@ const Bill = () => {
     return acc;
   }, {});
 
-  // Sort months chronologically
   const sortedMonths = Object.keys(monthlyExpenses).sort(
-    (a, b) => new Date(a) - new Date(b),
+    (a, b) => new Date(a) - new Date(b)
   );
 
   const generatePDF = () => {
@@ -88,14 +97,13 @@ const Bill = () => {
       );
     });
 
-    // console.log("selectedFilteredBills", selectedFilteredBills);
     const totalMonthly = selectedFilteredBills
       .reduce((sum, bill) => sum + bill.total, 0)
       .toFixed(2);
 
     const totalYearly = Object.entries(monthlyExpenses)
       .reduce((sum, [key, value]) => {
-        const [month, year] = key.split(" ");
+        const [, year] = key.split(" ");
         if (Number(year) === Number(selectedYear)) {
           return sum + value;
         }
@@ -103,87 +111,108 @@ const Bill = () => {
       }, 0)
       .toFixed(2);
 
+    const totalMonthlyPaid = selectedFilteredBills
+      .filter((bill) => bill.paymentStatus === "Paid")
+      .reduce((sum, bill) => sum + (bill.advancePayment ?? 0), 0)
+      .toFixed(2);
+
+    const totalMonthlyUnpaid = selectedFilteredBills
+      .filter((bill) => bill.paymentStatus === "Unpaid")
+      .reduce(
+        (sum, bill) =>
+          sum + Math.max(0, bill.total - (bill.advancePayment ?? 0)),
+        0
+      )
+      .toFixed(2);
+
     const content = `
-  <div style="font-family: Arial, sans-serif;">
-    <h2 style="text-align:center;">Monthly Expense Report</h2>
-    
-    <p><strong>Month:</strong> ${new Date(
-      selectedYear,
-      selectedMonth - 1,
-    ).toLocaleString("default", {
-      month: "long",
-    })}</p>
-    
-    <p><strong>Year:</strong> ${selectedYear}</p>
-    <p><strong>Payment Mode:</strong> ${filterStatus}</p>
-    <p><strong>Service Type:</strong> ${serviceTypeFilter} Service</p>
+      <div style="font-family: Arial, sans-serif;">
+        <h2 style="text-align:center;">Monthly Expense Report</h2>
 
-    <table border="1" cellspacing="0" cellpadding="8" width="100%" style="border-collapse: collapse; margin-top: 20px;">
-      <thead style="background-color: #f2f2f2;">
-        <tr>
-          <th>Bill No</th>
-          <th>Date</th>
-          <th>Customer</th>
-          <th>Status</th>
-          <th>Service Type</th>
-          <th>Item</th>
-          <th>Qty</th>
-          <th>Price</th>
-          <th>Subtotal</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${selectedFilteredBills
-          .map((bill) =>
-            bill.items
-              .map(
-                (item, idx) => `
+        <p><strong>Month:</strong> ${new Date(
+          selectedYear,
+          selectedMonth - 1
+        ).toLocaleString("default", { month: "long" })}</p>
+
+        <p><strong>Year:</strong> ${selectedYear}</p>
+        <p><strong>Payment Mode:</strong> ${paymentModeFilter}</p>
+        <p><strong>Payment Status:</strong> ${paymentStatusFilter}</p>
+        <p><strong>Service Type:</strong> ${serviceTypeFilter} Service</p>
+
+        <table border="1" cellspacing="0" cellpadding="8" width="100%" style="border-collapse: collapse; margin-top: 20px;">
+          <thead style="background-color: #f2f2f2;">
             <tr>
-              ${
-                idx === 0
-                  ? `<td rowspan="${bill.items.length}">${bill.billNumber}</td>`
-                  : ""
-              }
-              ${
-                idx === 0
-                  ? `<td rowspan="${bill.items.length}">${new Date(
-                      bill.date,
-                    ).toLocaleDateString()}</td>`
-                  : ""
-              }
-              ${
-                idx === 0
-                  ? `<td rowspan="${bill.items.length}">${bill.customer}</td>`
-                  : ""
-              }
-              ${
-                idx === 0
-                  ? `<td rowspan="${bill.items.length}">${bill.status}</td>`
-                  : ""
-              }
-              ${
-                idx === 0
-                  ? `<td rowspan="${bill.items.length}">${bill.billType} Service</td>`
-                  : ""
-              }
-              <td>${item.name}</td>
-              <td>${item.qty}</td>
-              <td>₹${item.price}</td>
-              <td>₹${(item.qty * item.price).toFixed(2)}</td>
+              <th>Bill No</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Payment Mode</th>
+              <th>Payment Status</th>
+              <th>Service Type</th>
+              <th>Item</th>
+              <th>Qty</th>
+              <th>Price</th>
+              <th>Subtotal</th>
             </tr>
-          `,
+          </thead>
+          <tbody>
+            ${selectedFilteredBills
+              .map((bill) =>
+                bill.items
+                  .map(
+                    (item, idx) => `
+                  <tr>
+                    ${
+                      idx === 0
+                        ? `<td rowspan="${bill.items.length}">${bill.billNumber}</td>`
+                        : ""
+                    }
+                    ${
+                      idx === 0
+                        ? `<td rowspan="${bill.items.length}">${new Date(
+                            bill.date
+                          ).toLocaleDateString()}</td>`
+                        : ""
+                    }
+                    ${
+                      idx === 0
+                        ? `<td rowspan="${bill.items.length}">${bill.customer}</td>`
+                        : ""
+                    }
+                    ${
+                      idx === 0
+                        ? `<td rowspan="${bill.items.length}">${bill.status}</td>`
+                        : ""
+                    }
+                    ${
+                      idx === 0
+                        ? `<td rowspan="${bill.items.length}">${bill.paymentStatus}</td>`
+                        : ""
+                    }
+                    ${
+                      idx === 0
+                        ? `<td rowspan="${bill.items.length}">${bill.billType} Service</td>`
+                        : ""
+                    }
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>₹${item.price}</td>
+                    <td>₹${(item.qty * item.price).toFixed(2)}</td>
+                  </tr>
+                `
+                  )
+                  .join("")
               )
-              .join(""),
-          )
-          .join("")}
-      </tbody>
-    </table>
+              .join("")}
+          </tbody>
+        </table>
 
-    <h3 style="margin-top: 30px;">Summary</h3>
-    <p><strong>Total Monthly Expense:</strong> ₹${totalMonthly}</p>
-    <p><strong>Total Yearly Expense:</strong> ₹${totalYearly}</p>
-  </div>
-  `;
+        <h3 style="margin-top: 30px;">Summary</h3>
+        <p><strong>Total Monthly Expense:</strong> ₹${totalMonthly}</p>
+        <p><strong>Total Monthly Paid Amount:</strong> ₹${totalMonthlyPaid}</p>
+        <p><strong>Total Monthly Unpaid Amount:</strong> ₹${totalMonthlyUnpaid}</p>
+        <p><strong>Total Yearly Expense:</strong> ₹${totalYearly}</p>
+      </div>
+    `;
 
     const opt = {
       margin: 0.5,
@@ -205,6 +234,7 @@ const Bill = () => {
         Customer: index === 0 ? bill.customer : "",
         Service: index === 0 ? `${bill.billType} Service` : "",
         "Payment Mode": index === 0 ? bill.status : "",
+        "Payment Status": index === 0 ? bill.paymentStatus : "",
         Item: item.name,
         Qty: item.qty,
         Price: item.price,
@@ -212,7 +242,7 @@ const Bill = () => {
         Total: index === 0 ? bill.total : "",
         Advance: index === 0 ? (bill.advancePayment ?? 0) : "",
         Balance: index === 0 ? bill.total - (bill.advancePayment ?? 0) : "",
-      })),
+      }))
     );
 
     exportToExcel({
@@ -243,12 +273,15 @@ const Bill = () => {
         Customer: index === 0 ? bill.customer : "",
         Service: index === 0 ? `${bill.billType} Service` : "",
         "Payment Mode": index === 0 ? bill.status : "",
+        "Payment Status": index === 0 ? bill.paymentStatus : "",
         Item: item.name,
         Qty: item.qty,
         Price: item.price,
         Subtotal: item.qty * item.price,
         Total: index === 0 ? bill.total : "",
-      })),
+        Advance: index === 0 ? (bill.advancePayment ?? 0) : "",
+        Balance: index === 0 ? bill.total - (bill.advancePayment ?? 0) : "",
+      }))
     );
 
     exportToExcel({
@@ -258,16 +291,11 @@ const Bill = () => {
     });
   };
 
-  // Check if there are any monthly expenses to display
-  const hasMonthlyExpenses = Object.keys(monthlyExpenses).length > 0;
-
   return (
     <div>
       <div className="w-full flex items-start justify-around mt-3 flex-wrap">
-        {/* Filter Buttons */}
         <div className="flex flex-col mb-6">
           <div className="space-y-6">
-            {/* Service Type Filter */}
             <div className="flex flex-col items-center">
               <h3 className="mb-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
                 Service Type Filter
@@ -309,17 +337,16 @@ const Bill = () => {
               </div>
             </div>
 
-            {/* Payment Type Filter */}
             <div className="flex flex-col items-center">
               <h3 className="mb-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                Payment Type Filter
+                Payment Mode Filter
               </h3>
 
               <div className="flex flex-wrap justify-center gap-2">
                 <button
-                  onClick={() => handleFilter("All")}
+                  onClick={() => setPaymentModeFilter("All")}
                   className={`px-4 py-2 rounded-md border text-sm transition ${
-                    filterStatus === "All"
+                    paymentModeFilter === "All"
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
@@ -328,9 +355,9 @@ const Bill = () => {
                 </button>
 
                 <button
-                  onClick={() => handleFilter("Cash")}
+                  onClick={() => setPaymentModeFilter("Cash")}
                   className={`px-4 py-2 rounded-md border text-sm transition ${
-                    filterStatus === "Cash"
+                    paymentModeFilter === "Cash"
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
@@ -339,9 +366,9 @@ const Bill = () => {
                 </button>
 
                 <button
-                  onClick={() => handleFilter("Online")}
+                  onClick={() => setPaymentModeFilter("Online")}
                   className={`px-4 py-2 rounded-md border text-sm transition ${
-                    filterStatus === "Online"
+                    paymentModeFilter === "Online"
                       ? "bg-blue-500 text-white border-blue-500"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
@@ -350,28 +377,75 @@ const Bill = () => {
                 </button>
               </div>
             </div>
+
+            <div className="flex flex-col items-center">
+              <h3 className="mb-2 text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Payment Status Filter
+              </h3>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                <button
+                  onClick={() => setPaymentStatusFilter("All")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    paymentStatusFilter === "All"
+                      ? "bg-blue-500 text-white border-blue-500"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  All
+                </button>
+
+                <button
+                  onClick={() => setPaymentStatusFilter("Paid")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    paymentStatusFilter === "Paid"
+                      ? "bg-green-600 text-white border-green-600"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Paid
+                </button>
+
+                <button
+                  onClick={() => setPaymentStatusFilter("Unpaid")}
+                  className={`px-4 py-2 rounded-md border text-sm transition ${
+                    paymentStatusFilter === "Unpaid"
+                      ? "bg-red-600 text-white border-red-600"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  Unpaid
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Show total expense for filtered bills */}
-          <div className="text-center px-4 text-lg font-bold text-blue-800 mb-4">
-            {serviceTypeFilter === "All"
-              ? "All Services"
-              : `${serviceTypeFilter} Services`}{" "}
-            -{" "}
-            {filterStatus === "All"
-              ? "All Payments"
-              : `${filterStatus} Payments`}
-            : ₹
+          <div className="text-center px-4 text-lg font-bold text-blue-800 mb-2 mt-6">
+            Total Amount: ₹
             {totalExpense.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </div>
+
+          <div className="text-center px-4 text-base font-semibold text-green-700">
+            Paid Amount: ₹
+            {totalPaidAmount.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </div>
+
+          <div className="text-center px-4 text-base font-semibold text-red-700">
+            Unpaid Amount: ₹
+            {totalUnpaidAmount.toLocaleString("en-IN", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
           </div>
         </div>
 
-        {/* Monthly Expenses */}
-
-        <div className=" mx-auto px-4 mb-6">
+        <div className="mx-auto px-4 mb-6">
           <div className="flex gap-4 items-center mb-4">
             <select
               value={selectedMonth}
@@ -413,10 +487,10 @@ const Bill = () => {
             </select>
           </div>
 
-          <div className=" mx-auto px-4 mb-6">
+          <div className="mx-auto px-4 mb-6">
             <h3 className="text-xl font-semibold mb-2">Monthly Expenses:</h3>
 
-            <div className="flex items-center gap-8 ">
+            <div className="flex items-center gap-8">
               {selectedMonth && selectedYear ? (
                 <p className="text-gray-800">
                   Selected:{" "}
@@ -426,7 +500,7 @@ const Bill = () => {
                       {
                         month: "short",
                         year: "numeric",
-                      },
+                      }
                     )}
                   </span>{" "}
                   - ₹
@@ -461,14 +535,16 @@ const Bill = () => {
                   ))}
                 </ul>
               )}
+
               {selectedMonth && selectedYear && (
                 <button
                   onClick={generatePDF}
-                  className=" px-4 py-2 bg-green-600 cursor-pointer text-white rounded-md hover:bg-green-700"
+                  className="px-4 py-2 bg-green-600 cursor-pointer text-white rounded-md hover:bg-green-700"
                 >
                   Download Monthly Report PDF
                 </button>
               )}
+
               {selectedMonth && selectedYear && (
                 <button
                   onClick={downloadMonthlyBillsExcel}
@@ -482,22 +558,16 @@ const Bill = () => {
         </div>
       </div>
 
-      {/* <div className="flex justify-end px-4 mb-4">
-        <DownloadBillPdfButton filteredBills={filteredBills} />
-      </div> */}
-
       <div className="flex justify-end gap-3 px-4 mb-4">
-                  <button
-                    onClick={downloadBillsExcel}
-                    className="flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-                  >
-                    Download Bills Excel
-                  </button>
+        <button
+          onClick={downloadBillsExcel}
+          className="flex items-center cursor-pointer gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+        >
+          Download Bills Excel
+        </button>
 
-                  <DownloadBillPdfButton filteredBills={filteredBills} />
-                </div>
-
-      {/* Bills Display */}
+        <DownloadBillPdfButton filteredBills={filteredBills} />
+      </div>
 
       <div className="overflow-x-auto p-4">
         <table className="min-w-full border border-gray-300 rounded-lg">
@@ -507,7 +577,8 @@ const Bill = () => {
               <th className="border px-3 py-2">Date</th>
               <th className="border px-3 py-2">Customer</th>
               <th className="border px-3 py-2">Service</th>
-              <th className="border px-3 py-2">Status</th>
+              <th className="border px-3 py-2">Payment Mode</th>
+              <th className="border px-3 py-2">Payment Status</th>
               <th className="border px-3 py-2">Item</th>
               <th className="border px-3 py-2">Qty</th>
               <th className="border px-3 py-2">Price</th>
@@ -521,7 +592,7 @@ const Bill = () => {
           <tbody>
             {filteredBills.length === 0 ? (
               <tr>
-                <td colSpan="12" className="text-center py-4 text-gray-500">
+                <td colSpan="13" className="text-center py-4 text-gray-500">
                   No bills found
                 </td>
               </tr>
@@ -529,7 +600,6 @@ const Bill = () => {
               filteredBills.map((bill) =>
                 bill.items.map((item, index) => (
                   <tr key={item._id} className="text-sm hover:bg-gray-50">
-                    {/* Bill-level fields only on first item row */}
                     {index === 0 && (
                       <>
                         <td
@@ -564,16 +634,26 @@ const Bill = () => {
                           rowSpan={bill.items.length}
                           className={`border px-3 py-2 font-medium ${
                             bill.status === "Cash"
-                              ? "text-red-600"
-                              : "text-green-600"
+                              ? "text-orange-600"
+                              : "text-blue-600"
                           }`}
                         >
                           {bill.status}
                         </td>
+
+                        <td
+                          rowSpan={bill.items.length}
+                          className={`border px-3 py-2 font-semibold ${
+                            bill.paymentStatus === "Paid"
+                              ? "text-green-600"
+                              : "text-red-600"
+                          }`}
+                        >
+                          {bill.paymentStatus}
+                        </td>
                       </>
                     )}
 
-                    {/* Item-level fields */}
                     <td className="border px-3 py-2">{item.name}</td>
                     <td className="border px-3 py-2">{item.qty}</td>
                     <td className="border px-3 py-2">
@@ -583,7 +663,6 @@ const Bill = () => {
                       ₹{(item.qty * item.price).toLocaleString("en-IN")}
                     </td>
 
-                    {/* Totals only once */}
                     {index === 0 && (
                       <>
                         <td
@@ -597,22 +676,27 @@ const Bill = () => {
                           rowSpan={bill.items.length}
                           className="border px-3 py-2"
                         >
-                          ₹{bill.advancePayment.toLocaleString("en-IN") || 0}
+                          ₹{(bill.advancePayment ?? 0).toLocaleString("en-IN")}
                         </td>
 
                         <td
                           rowSpan={bill.items.length}
-                          className="border px-3 py-2 font-bold text-green-700"
+                          className={`border px-3 py-2 font-bold ${
+                            bill.paymentStatus === "Paid"
+                              ? "text-green-700"
+                              : "text-red-700"
+                          }`}
                         >
                           ₹
-                          {(
+                          {Math.max(
+                            0,
                             bill.total - (bill.advancePayment ?? 0)
                           ).toLocaleString("en-IN")}
                         </td>
                       </>
                     )}
                   </tr>
-                )),
+                ))
               )
             )}
           </tbody>

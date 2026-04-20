@@ -11,16 +11,19 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
     !bill?.items ||
     !bill?.total
   ) {
+    onClose();
     alert("Please fill in all the required fields.");
     return null;
   }
+
+  const discount = bill?.discount || 0;
 
   console.log(bill);
   const totalAdvance =
     Number(bill?.advancePayment) + Number(bill?.amountInWallet) || 0;
 
   const remainingBalance =
-    bill?.total > totalAdvance ? bill?.total - totalAdvance : 0;
+    (bill?.total - discount) > totalAdvance ? bill?.total - discount - totalAdvance : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -78,9 +81,10 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
         <div className="space-y-3 border-t pt-3">
           <div className="flex justify-between text-sm">
             <span>Total Amount</span>
+            <span>{bill?.total} - {discount} = </span>
             <span className="font-semibold">
               ₹
-              {bill?.total.toLocaleString("en-IN", {
+              {(bill?.total - discount).toLocaleString("en-IN", {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
@@ -112,9 +116,9 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
             <span>Remaining Balance In Wallet </span>
             <span className="font-semibold">
               ₹
-              {bill?.total - totalAdvance > 0
+              {bill?.total - discount - totalAdvance > 0
                 ? 0
-                : (totalAdvance - bill?.total).toLocaleString("en-IN", {
+                : (totalAdvance - (bill?.total - discount)).toLocaleString("en-IN", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}

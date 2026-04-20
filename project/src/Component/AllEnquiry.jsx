@@ -1,8 +1,11 @@
 import ConvertToPatientForm from "./ConvertToPatientForm";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { MdDelete } from "react-icons/md";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { pdf } from "@react-pdf/renderer";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+import EnquiryPdfDocument from "./pdf/EnquiryPdfDocument";
 
 const AllEnquiry = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
@@ -16,10 +19,21 @@ const AllEnquiry = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [deletingEnquiryId, setDeletingEnquiryId] = useState(null);
-  const [updatingPatientId, setUpdatingPatientId] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // const [role, setRole] = useState("employee");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({
+    enquiryId: "",
+    patientId: "",
+    enquiryStatus: "",
+    patientStatus: "true",
+    remark: "",
+  });
+
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [downloadingExcel, setDownloadingExcel] = useState(false);
+
   const tabs = ["all", "lead", "patient"];
 
   const fetchAllEnquiries = async () => {
@@ -59,67 +73,15 @@ const AllEnquiry = () => {
     }
   }, []);
 
-  // const fetchAllEmployees = async () => {
-  //   try {
-  //     const response = await fetch(
-  //       `${import.meta.env.VITE_BACKEND_URL}/api/employee/getAllEmployee`,
-  //     );
-
-  //     const result = await response.json();
-  //     console.log("Employee data:", result);
-
-  //     if (result.success && result.employees.length > 0) {
-  //       setEmployeeData(result.employees);
-
-  //       // ⚠️ Make sure employees are sorted (latest first)
-  //       const lastEmployee = result.employees[0];
-  //       console.log("last employee", lastEmployee);
-  //       const lastEmployeeNumber = lastEmployee?.personalDetails?.employeeId;
-
-  //       console.log("Last employee number:", lastEmployeeNumber);
-
-  //       // ✅ Correct regex
-  //       const match = lastEmployeeNumber?.match(/^(.+)-(\d+)$/);
-  //       console.log("match:", match);
-
-  //       if (match) {
-  //         const prefix = match[1]; // MR-EMP
-  //         const number = parseInt(match[2], 10) + 1;
-
-  //         const newEmployeeId = `${prefix}-${number
-  //           .toString()
-  //           .padStart(4, "0")}`;
-
-  //         setLastEmployeeNumber(newEmployeeId);
-  //       } else {
-  //         setLastEmployeeNumber("MR-EMP-0001");
-  //       }
-  //     } else {
-  //       setLastEmployeeNumber("MR-EMP-0001");
-  //     }
-  //   } catch (error) {
-  //     console.error("Error fetching employee data:", error);
-  //     setLastEmployeeNumber("MR-EMP-0001");
-  //   }
-  // };
-
-  // // console.log("last employee number", lastEmployeeNumber);
-
-  // useEffect(() => {
-  //   fetchAllEmployees();
-  // }, []);
-
   const getFilteredEnquiries = () => {
     let filtered = [...enquiries];
 
-    /* ---- STATUS FILTER ---- */
     if (activeStatus === "lead") {
       filtered = filtered.filter((e) => e.enquiryStatus === "lead");
     } else if (activeStatus === "patient") {
       filtered = filtered.filter((e) => e.enquiryStatus === "patient");
     }
 
-    /* ---- PATIENT STATUS FILTER ---- */
     if (patientStatus !== "all") {
       filtered = filtered.filter((e) => {
         const status = e?.patientId?.personalDetails?.patientStatus;
@@ -131,7 +93,6 @@ const AllEnquiry = () => {
       });
     }
 
-    /* ---- SEARCH (Name | Phone | EmployeeId | PatientId) ---- */
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
 
@@ -146,7 +107,6 @@ const AllEnquiry = () => {
       });
     }
 
-    /* ---- SORT BY CREATED AT ---- */
     filtered.sort((a, b) => {
       const dateA = new Date(a.createdAt);
       const dateB = new Date(b.createdAt);
@@ -156,19 +116,200 @@ const AllEnquiry = () => {
     return filtered;
   };
 
+  const normalizeEnquiryData = (data) => {
+    return data.map((item, index) => ({
+      "S.No": index + 1,
+      "Enquiry ID": item?._id || "",
+      "Type": item?.enquiryStatus || "",
+      "Patient Status":
+        item?.enquiryStatus === "patient"
+          ? item?.patientId?.personalDetails?.patientStatus
+            ? "Active"
+            : "Inactive"
+          : "-",
+      "Patient Code": item?.patientId?.personalDetails?.patientId || "-",
+      "Name": item?.patientName || "",
+      "Gender": item?.gender || "",
+      "Age": item?.age ?? "",
+      "Occupation": item?.occupation || "",
+      "Contact Number": item?.contactNumber || "",
+      "Email": item?.email || "",
+      "Chief Complaint": item?.chiefComplaint || "",
+      "Remark": item?.remark || "",
+      "Response": item?.response || "",
+      "Source": item?.source || "",
+      "Address": item?.patientId?.personalDetails?.address || "-",
+      "Attendance Count": item?.patientId?.attendance?.length || 0,
+      "Billing Count": item?.patientId?.billing?.length || 0,
+      "Treatment Count": item?.patientId?.treatment?.length || 0,
+      "Created Date": item?.createdAt
+        ? new Date(item.createdAt).toLocaleDateString()
+        : "",
+      "Created Time": item?.createdAt
+        ? new Date(item.createdAt).toLocaleTimeString()
+        : "",
+      "Updated Date": item?.updatedAt
+        ? new Date(item.updatedAt).toLocaleDateString()
+        : "",
+    }));
+  };
+
+  const getSummaryStats = (data) => {
+    const total = data.length;
+    const leads = data.filter((item) => item.enquiryStatus === "lead").length;
+    const patients = data.filter(
+      (item) => item.enquiryStatus === "patient"
+    ).length;
+    const activePatients = data.filter(
+      (item) =>
+        item.enquiryStatus === "patient" &&
+        item?.patientId?.personalDetails?.patientStatus === true
+    ).length;
+    const inactivePatients = data.filter(
+      (item) =>
+        item.enquiryStatus === "patient" &&
+        item?.patientId?.personalDetails?.patientStatus === false
+    ).length;
+    const conversionRate = total > 0 ? ((patients / total) * 100).toFixed(2) : 0;
+
+    return {
+      total,
+      leads,
+      patients,
+      activePatients,
+      inactivePatients,
+      conversionRate,
+    };
+  };
+
+  const getExportFileName = (type) => {
+    const date = new Date().toISOString().split("T")[0];
+    const statusPart = activeStatus || "all";
+    const patientFilterPart =
+      activeStatus === "patient" ? `-${patientStatus}` : "";
+    const searchPart = searchTerm?.trim()
+      ? `-${searchTerm.trim().replace(/\s+/g, "-")}`
+      : "";
+
+    return `enquiry-${statusPart}${patientFilterPart}${searchPart}-${date}.${type}`;
+  };
+
+  const handleDownloadExcel = async () => {
+    try {
+      setDownloadingExcel(true);
+
+      const filteredData = getFilteredEnquiries();
+      const normalizedData = normalizeEnquiryData(filteredData);
+      const stats = getSummaryStats(filteredData);
+
+      const workbook = XLSX.utils.book_new();
+
+      const summaryData = [
+        ["Enquiry Report Summary"],
+        [],
+        ["Total Enquiries", stats.total],
+        ["Total Leads", stats.leads],
+        ["Total Patients", stats.patients],
+        ["Active Patients", stats.activePatients],
+        ["Inactive Patients", stats.inactivePatients],
+        ["Conversion Rate (%)", stats.conversionRate],
+        [],
+        ["Applied Filters"],
+        ["Enquiry Type Filter", activeStatus],
+        ["Patient Status Filter", patientStatus],
+        ["Search Term", searchTerm || "-"],
+        ["Sort By", sortBy],
+      ];
+
+      const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
+
+      const dataSheet = XLSX.utils.json_to_sheet(normalizedData);
+      XLSX.utils.book_append_sheet(workbook, dataSheet, "Enquiries");
+
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8",
+      });
+
+      saveAs(blob, getExportFileName("xlsx"));
+    } catch (error) {
+      console.error("Excel download failed:", error);
+      alert("Failed to download Excel");
+    } finally {
+      setDownloadingExcel(false);
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      setDownloadingPdf(true);
+
+      const filteredData = getFilteredEnquiries();
+      const stats = getSummaryStats(filteredData);
+
+      const blob = await pdf(
+        <EnquiryPdfDocument
+          enquiries={filteredData}
+          stats={stats}
+          activeStatus={activeStatus}
+          patientStatus={patientStatus}
+          searchTerm={searchTerm}
+          sortBy={sortBy}
+        />
+      ).toBlob();
+
+      saveAs(blob, getExportFileName("pdf"));
+    } catch (error) {
+      console.error("PDF download failed:", error);
+      alert("Failed to download PDF");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const openEditModal = (entry) => {
+    setSelectedEnquiry(entry);
+    setEditData({
+      enquiryId: entry?._id || "",
+      patientId: entry?.patientId?._id || "",
+      enquiryStatus: entry?.enquiryStatus || "lead",
+      patientStatus: entry?.patientId?.personalDetails?.patientStatus
+        ? "true"
+        : "false",
+      remark: entry?.remark || "",
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setSelectedEnquiry(null);
+    setEditData({
+      enquiryId: "",
+      patientId: "",
+      enquiryStatus: "",
+      patientStatus: "true",
+      remark: "",
+    });
+  };
+
   const handleConvertToPatient = async (data) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to convert this enquiry into patient ?",
+    const confirmConvert = window.confirm(
+      "Are you sure you want to convert this enquiry into patient?"
     );
 
-    if (!confirmDelete) return;
+    if (!confirmConvert) return;
+
     try {
       const payload = {
         ...data,
-        enquiryId: selectedEnquiry?._id, // 👈 IMPORTANT
+        enquiryId: selectedEnquiry?._id,
       };
-
-      console.log("payload", payload);
 
       const response = await fetch(`${backendURL}/api/patient/createPatient`, {
         method: "POST",
@@ -178,29 +319,23 @@ const AllEnquiry = () => {
 
       const result = await response.json();
 
-      console.log("result", result);
-
       if (result?.success) {
         alert("Patient created successfully");
-        fetchAllEnquiries(); // refresh list
+        fetchAllEnquiries();
         setShowConvertToPatientForm(false);
+        closeEditModal();
       } else {
-        alert(result?.message);
+        alert(result?.message || "Failed to convert to patient");
       }
     } catch (error) {
       console.error("Convert to patient failed", error);
+      alert("Something went wrong");
     }
   };
 
-  const handlePatientStatusChange = async (patientId, patientStatus) => {
+  const handleSaveEdit = async () => {
     try {
-      const confirmDelete = window.confirm(
-        `Are you sure you want to update the patient status from ${!patientStatus ? "Active" : "In-Active"} to ${patientStatus ? "Active" : "In-active "} ?`,
-      );
-
-      if (!confirmDelete) return;
-
-      setUpdatingPatientId(patientId);
+      setSavingEdit(true);
 
       const response = await fetch(
         `${backendURL}/api/patient/updatePatientStatus`,
@@ -210,36 +345,44 @@ const AllEnquiry = () => {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            patientId,
-            patientStatus,
+            enquiryId: editData.enquiryId,
+            patientId: editData.patientId || null,
+            patientStatus:
+              editData.enquiryStatus === "patient"
+                ? editData.patientStatus === "true"
+                : undefined,
+            remark: editData.remark,
           }),
-        },
+        }
       );
 
       const result = await response.json();
 
       if (result?.success) {
-        alert("Patient status updated successfully");
+        alert("Updated successfully");
         fetchAllEnquiries();
+        closeEditModal();
       } else {
-        alert(result?.message || "Failed to update status");
+        alert(result?.message || "Failed to update");
       }
     } catch (error) {
-      console.error("Error updating patient status:", error);
+      console.error("Error updating enquiry/patient:", error);
       alert("Something went wrong");
     } finally {
-      setUpdatingPatientId(null);
+      setSavingEdit(false);
     }
   };
 
   const handleDeleteEnquiry = async (enquiryId) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this enquiry?",
+      "Are you sure you want to delete this enquiry?"
     );
 
     if (!confirmDelete) return;
+
     try {
       setDeletingEnquiryId(enquiryId);
+
       const response = await fetch(
         `${backendURL}/api/enquiry/deleteEnquiryById/${enquiryId}`,
         {
@@ -248,29 +391,31 @@ const AllEnquiry = () => {
             "Content-Type": "application/json",
             token: localStorage.getItem("webapptoken"),
           },
-        },
+        }
       );
 
       const result = await response.json();
 
       if (result?.success) {
-        console.log("result", result);
-        fetchAllEnquiries(); // refresh list
         alert("Enquiry deleted successfully");
+        fetchAllEnquiries();
+        closeEditModal();
       } else {
-        alert(result?.message);
+        alert(result?.message || "Delete failed");
       }
     } catch (error) {
       console.error("Delete enquiry failed", error);
+      alert("Something went wrong");
     } finally {
       setDeletingEnquiryId(null);
     }
   };
 
-  console.log("enquiries", enquiries);
+  const filteredEnquiries = getFilteredEnquiries();
+
   return (
     <div className="px-6">
-      <div className="flex flex-wrap gap-4 mt-10 mb-4 items-center ">
+      <div className="flex flex-wrap gap-4 mt-10 mb-4 items-center">
         {tabs?.map((s) => (
           <button
             key={s}
@@ -284,15 +429,11 @@ const AllEnquiry = () => {
         ))}
         <p className="text-black font-semibold">
           Total Enquiry :-{" "}
-          <span className="text-gray-600">
-            {" "}
-            {getFilteredEnquiries()?.length}
-          </span>
+          <span className="text-gray-600">{filteredEnquiries?.length}</span>
         </p>
       </div>
 
       <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
-        {/* SEARCH */}
         <input
           type="text"
           placeholder="Search by name, phone, or patient ID"
@@ -301,7 +442,6 @@ const AllEnquiry = () => {
           className="px-4 py-2 border rounded w-full md:w-1/2"
         />
 
-        {/* SORT */}
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value)}
@@ -311,7 +451,6 @@ const AllEnquiry = () => {
           <option value="oldest">Oldest First</option>
         </select>
 
-        {/* PATIENT STATUS FILTER */}
         {activeStatus === "patient" && (
           <select
             value={patientStatus}
@@ -325,9 +464,26 @@ const AllEnquiry = () => {
         )}
       </div>
 
-      {/* LIST */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        <button
+          onClick={handleDownloadPdf}
+          disabled={downloadingPdf || filteredEnquiries.length === 0}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-60"
+        >
+          {downloadingPdf ? "Downloading PDF..." : "Download PDF"}
+        </button>
+
+        <button
+          onClick={handleDownloadExcel}
+          disabled={downloadingExcel || filteredEnquiries.length === 0}
+          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-60"
+        >
+          {downloadingExcel ? "Downloading Excel..." : "Download Excel"}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {getFilteredEnquiries().length === 0 ? (
+        {filteredEnquiries.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-lg font-medium text-gray-600">
               No enquiries match your filters
@@ -337,27 +493,21 @@ const AllEnquiry = () => {
             </p>
           </div>
         ) : (
-          getFilteredEnquiries().map((entry) => (
+          filteredEnquiries.map((entry) => (
             <div
               key={entry._id}
               className="relative bg-white border border-gray-200 rounded-lg p-4 hover:shadow-sm transition"
             >
               {isAdmin && (
                 <button
-                  className={`absolute top-2 right-2 cursor-pointer ${deletingEnquiryId === entry._id ? "cursor-not-allowed" : "cursor-pointer"} `}
-                  disabled={deletingEnquiryId === entry._id}
-                  onClick={() => handleDeleteEnquiry(entry._id)}
+                  onClick={() => openEditModal(entry)}
+                  className="absolute top-3 right-3 bg-blue-600 text-white text-sm px-3 py-1 rounded-md hover:bg-blue-700"
                 >
-                  {deletingEnquiryId === entry._id ? (
-                    <AiOutlineLoading3Quarters className="text-2xl text-red-500 animate-spin" />
-                  ) : (
-                    <MdDelete className="text-2xl text-red-500 hover:text-red-600" />
-                  )}
+                  Edit
                 </button>
               )}
-              {/* {console.log("entry" , entry)} */}
-              {/* Header */}
-              <div className="mb-2">
+
+              <div className="mb-2 pr-16">
                 {entry.enquiryStatus === "patient" && (
                   <div className="mb-2 space-y-2">
                     <p className="text-xs text-gray-500">
@@ -382,33 +532,12 @@ const AllEnquiry = () => {
                             : "Inactive"}
                         </span>
                       </p>
-                      {isAdmin && (
-                        <select
-                          value={
-                            entry?.patientId?.personalDetails?.patientStatus
-                              ? "true"
-                              : "false"
-                          }
-                          disabled={updatingPatientId === entry?.patientId?._id}
-                          onChange={(e) =>
-                            handlePatientStatusChange(
-                              entry?.patientId?._id,
-                              e.target.value === "true",
-                            )
-                          }
-                          className="px-3 py-1.5 border rounded-md text-sm"
-                        >
-                          <option value="true">Active</option>
-                          <option value="false">Inactive</option>
-                        </select>
-                      )}
                     </div>
                   </div>
                 )}
 
                 <h3 className="font-semibold text-gray-800 text-base">
                   <span>Name- </span>
-
                   <span className="text-sm text-gray-500">
                     {entry?.patientName}
                   </span>
@@ -418,33 +547,23 @@ const AllEnquiry = () => {
                   <span className="text-sm text-gray-500">Contact number-</span>{" "}
                   {entry?.contactNumber}
                 </p>
+
                 <p className="font-semibold text-gray-800 text-base">
                   <span className="text-sm text-gray-500">Remark-</span>{" "}
-                  {entry?.remark}
+                  {entry?.remark || "_______"}
                 </p>
               </div>
 
-              {/* Complaint */}
-              {activeStatus !== "employee" && (
-                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                  <span className="font-medium text-gray-700">Complaint:</span>{" "}
-                  {entry.chiefComplaint || "-"}
-                </p>
-              )}
-
-              {/* Footer */}
+              <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                <span className="font-medium text-gray-700">Complaint:</span>{" "}
+                {entry.chiefComplaint || "-"}
+              </p>
 
               <div className="flex items-center justify-between">
                 {entry.enquiryStatus === "lead" ? (
-                  <button
-                    onClick={() => {
-                      setShowConvertToPatientForm(true);
-                      setSelectedEnquiry(entry);
-                    }}
-                    className="text-sm font-medium text-red-600 hover:text-red-700"
-                  >
-                    Convert to Patient →
-                  </button>
+                  <span className="text-sm font-medium text-yellow-600">
+                    ● Lead
+                  </span>
                 ) : (
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-green-600">
@@ -464,10 +583,110 @@ const AllEnquiry = () => {
         )}
       </div>
 
+      {showEditModal && selectedEnquiry && (
+        <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-lg p-6 relative">
+            <button
+              onClick={closeEditModal}
+              className="absolute right-4 top-4 text-gray-500 hover:text-black text-xl"
+            >
+              ×
+            </button>
+
+            <h2 className="text-xl font-semibold mb-4">Edit Enquiry</h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name</label>
+                <input
+                  type="text"
+                  value={selectedEnquiry?.patientName || ""}
+                  disabled
+                  className="w-full border rounded px-3 py-2 bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Remark</label>
+                <textarea
+                  rows={4}
+                  value={editData.remark}
+                  onChange={(e) =>
+                    setEditData((prev) => ({
+                      ...prev,
+                      remark: e.target.value,
+                    }))
+                  }
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="Update remark"
+                />
+              </div>
+
+              {editData.enquiryStatus === "patient" && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Patient Status
+                  </label>
+                  <select
+                    value={editData.patientStatus}
+                    onChange={(e) =>
+                      setEditData((prev) => ({
+                        ...prev,
+                        patientStatus: e.target.value,
+                      }))
+                    }
+                    className="w-full border rounded px-3 py-2"
+                  >
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-3 pt-2">
+                <button
+                  onClick={handleSaveEdit}
+                  disabled={savingEdit}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-70"
+                >
+                  {savingEdit ? "Saving..." : "Update"}
+                </button>
+
+                {selectedEnquiry?.enquiryStatus === "lead" && (
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setShowConvertToPatientForm(true);
+                    }}
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  >
+                    Convert to Patient
+                  </button>
+                )}
+
+                <button
+                  onClick={() => handleDeleteEnquiry(selectedEnquiry?._id)}
+                  disabled={deletingEnquiryId === selectedEnquiry?._id}
+                  className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-70 flex items-center gap-2"
+                >
+                  {deletingEnquiryId === selectedEnquiry?._id && (
+                    <AiOutlineLoading3Quarters className="animate-spin" />
+                  )}
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showConvertToPatientForm && (
         <ConvertToPatientForm
           selectedEnquiry={selectedEnquiry}
-          onClose={() => setShowConvertToPatientForm(false)}
+          onClose={() => {
+            setShowConvertToPatientForm(false);
+            setShowEditModal(true);
+          }}
           onSubmit={handleConvertToPatient}
         />
       )}

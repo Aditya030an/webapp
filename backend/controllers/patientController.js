@@ -7,7 +7,6 @@ import Counter from "../models/counterModel.js";
 const generatePatientCode = async () => {
   const year = new Date().getFullYear();
 
-  // Get patient with highest patientId number
   const lastPatient = await Patient.findOne(
     {},
     { "personalDetails.patientId": 1 },
@@ -18,7 +17,6 @@ const generatePatientCode = async () => {
   let nextNumber = 1;
 
   if (lastPatient?.personalDetails?.patientId) {
-    // Example: MR-00027/2026 → 27
     const lastId = lastPatient.personalDetails.patientId;
     const numberPart = parseInt(lastId.split("-")[1].split("/")[0], 10);
     nextNumber = numberPart + 1;
@@ -46,14 +44,8 @@ const createPatient = async (req, res) => {
       });
     }
 
-    console.log("req.body", req.body);
-
-    // 1️⃣ Generate patient code
     const patientCode = await generatePatientCode();
 
-    console.log("patientCode", patientCode);
-
-    // 2️⃣ Create patient
     const patient = await Patient.create({
       personalDetails: {
         name,
@@ -62,12 +54,11 @@ const createPatient = async (req, res) => {
         address,
         contactNumber,
         chiefComplaint,
-        patientId: patientCode, // string ID
-        enquiryId, // ref to enquiry
+        patientId: patientCode,
+        enquiryId,
       },
     });
 
-    // 3️⃣ Update enquiry
     await enquiryModel.findByIdAndUpdate(
       enquiryId,
       {
@@ -77,7 +68,7 @@ const createPatient = async (req, res) => {
         contactNumber,
         chiefComplaint,
         enquiryStatus: "patient",
-        patientId: patient._id, // ✅ ObjectId reference
+        patientId: patient._id,
       },
       { new: true },
     );
@@ -90,7 +81,6 @@ const createPatient = async (req, res) => {
   } catch (error) {
     console.error(error);
 
-    // 🔐 Duplicate safety (extra protection)
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -160,48 +150,73 @@ const getPatientById = async (req, res) => {
 
 const updatedPatientStatus = async (req, res) => {
   try {
-    const { patientId, patientStatus } = req.body;
-
-    if (!patientId) {
+    const { patientId, patientStatus, enquiryId, remark } = req.body;
+  
+    if (!enquiryId) {
       return res.status(400).json({
         success: false,
-        message: "patientId is required",
+        message: "enquiryId is required",
       });
     }
 
-    if (typeof patientStatus !== "boolean") {
-      return res.status(400).json({
-        success: false,
-        message: "patientStatus must be true or false",
-      });
+    const enquiryUpdateData = {};
+
+    if (typeof remark === "string") {
+      enquiryUpdateData.remark = remark.trim();
     }
 
-    const patient = await Patient.findByIdAndUpdate(
-      patientId,
-      {
-        $set:{
-          "personalDetails.patientStatus":patientStatus,
-        },
-      },
+    const enquiry = await enquiryModel.findByIdAndUpdate(
+      enquiryId,
+      { $set: enquiryUpdateData },
       { new: true },
     );
-    if (!patient) {
+
+    if (!enquiry) {
       return res.status(404).json({
         success: false,
-        message: "Patient not found",
+        message: "Enquiry not found",
       });
+    }
+
+    let patient = null;
+
+    if (patientId) {
+      if (typeof patientStatus !== "boolean") {
+        return res.status(400).json({
+          success: false,
+          message: "patientStatus must be true or false",
+        });
+      }
+
+      patient = await Patient.findByIdAndUpdate(
+        patientId,
+        {
+          $set: {
+            "personalDetails.patientStatus": patientStatus,
+          },
+        },
+        { new: true },
+      );
+
+      if (!patient) {
+        return res.status(404).json({
+          success: false,
+          message: "Patient not found",
+        });
+      }
     }
 
     return res.status(200).json({
       success: true,
-      message: "Patient status updated successfully",
+      message: "Enquiry updated successfully",
+      enquiry,
       patient,
     });
   } catch (err) {
-    console.error("Error updating patient status:", err);
+    console.error("Error updating enquiry/patient:", err);
     return res.status(500).json({
       success: false,
-      message: "Server error while updating patient status",
+      message: "Server error while updating enquiry/patient",
     });
   }
 };

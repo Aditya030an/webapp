@@ -101,7 +101,7 @@ const enquirySchema = new mongoose.Schema({
   timestamps: true,
 });
 
-const enquiryModel =mongoose.models.user ||  mongoose.model("enquiry" , enquirySchema);
+const enquiryModel =mongoose.models.enquiry ||  mongoose.model("enquiry" , enquirySchema);
 
 export default enquiryModel;
 

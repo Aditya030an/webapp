@@ -211,7 +211,7 @@ const BillSection = ({ fetchData, billing, patientDetail, attendance }) => {
                       ? "Due Amount"
                       : "Received Amount"}
                   </span>
-                  <span className="text-right font-bold  text-green-700">
+                  <span className={`text-right font-bold ${bill?.paymentStatus === "Unpaid" ? "text-red-700": "text-green-700"} `}>
                     ₹
                     {bill?.total -
                       (Number(bill?.advancePayment) + bill?.amountInWallet) <

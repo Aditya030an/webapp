@@ -57,7 +57,12 @@ const Cell = ({ style, children, header }) => (
 
 const AllBillPdf = ({ filteredBills }) => {
   return (
-    <PdfTemplate>
+    <PdfTemplate
+        showHeader={true}
+      showRightHeaderContent={false}
+      showSignature={false}
+      showFooter={true}
+    >
       <View style={styles.table}>
 
         {/* ===== HEADER ===== */}
