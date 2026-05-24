@@ -26,16 +26,6 @@ const createEnquiry = async (req, res) => {
       occupation,
       contactNumber,
       email,
-      chiefComplaint,
-      remark,
-      response,
-      source,
-      paymentStatus,
-      amountPerDay,
-      numberOfDays,
-      total,
-      musculoskeletalFormId,
-      neurologicalFormId,
     } = req.body;
 
     // Check if contact number already exists
@@ -54,16 +44,6 @@ const createEnquiry = async (req, res) => {
       occupation,
       contactNumber,
       email,
-      chiefComplaint,
-      remark,
-      response,
-      source,
-      paymentStatus,
-      amountPerDay,
-      numberOfDays,
-      total,
-      musculoskeletalFormId,
-      neurologicalFormId,
     });
 
     // Save the enquiry to the database
@@ -85,14 +65,103 @@ const createEnquiry = async (req, res) => {
   }
 };
 
-const getEnquiry = async (req, res)=>{
-  try{
-    const enquiries = await enquiryModel.find().populate("patientId");
-    res.status(200).json({ enquiries });
-  }catch(err){
+// const getEnquiry = async (req, res)=>{
+//   try{
+//     const enquiries = await enquiryModel.find().populate("patientId");
+//     res.status(200).json({ enquiries });
+//   }catch(err){
+//     console.log(err);
+//   }
+// }
+
+const getEnquiry = async (req, res) => {
+  try {
+    const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 9, 1), 100);
+
+    const activeStatus = req.query.activeStatus || "all";
+    const patientStatus = req.query.patientStatus || "all";
+    const search = req.query.search?.trim() || "";
+    const sortBy = req.query.sortBy === "oldest" ? "oldest" : "newest";
+
+    const query = {};
+
+    if (activeStatus === "lead" || activeStatus === "patient") {
+      query.enquiryStatus = activeStatus;
+    }
+
+    if (search) {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [
+        { patientName: searchRegex },
+        { contactNumber: searchRegex },
+        { email: searchRegex },
+      ];
+    }
+
+    let enquiries = await enquiryModel
+      .find(query)
+      .populate("patientId")
+      .sort({ createdAt: sortBy === "newest" ? -1 : 1 });
+
+    enquiries = enquiries.filter((enquiry) => {
+      const status = enquiry?.patientId?.personalDetails?.patientStatus;
+
+      // ALL tab: hide inactive patients
+      if (activeStatus === "all") {
+        return !(enquiry.enquiryStatus === "patient" && status === false);
+      }
+
+      if (activeStatus === "patient") {
+        if (patientStatus === "active") return status === true;
+        if (patientStatus === "inactive") return status === false;
+      }
+
+      return true;
+    });
+
+    if (search) {
+      const term = search.toLowerCase();
+
+      enquiries = enquiries.filter((enquiry) => {
+        const patientCode = enquiry?.patientId?.personalDetails?.patientId
+          ?.toLowerCase()
+          ?.includes(term);
+
+        const name = enquiry?.patientName?.toLowerCase()?.includes(term);
+        const phone = enquiry?.contactNumber?.includes(term);
+        const email = enquiry?.email?.toLowerCase()?.includes(term);
+
+        return patientCode || name || phone || email;
+      });
+    }
+
+    const totalEnquiries = enquiries.length;
+    const totalPages = Math.ceil(totalEnquiries / limit) || 1;
+    const skip = (page - 1) * limit;
+
+    const paginatedEnquiries = enquiries.slice(skip, skip + limit);
+
+    res.status(200).json({
+      success: true,
+      enquiries: paginatedEnquiries,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalEnquiries,
+        limit,
+        hasPrevPage: page > 1,
+        hasNextPage: page < totalPages,
+      },
+    });
+  } catch (err) {
     console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Error fetching enquiries",
+    });
   }
-}
+};
 
 
 const getPatientAttendanceEnquiry = async (req, res) => {

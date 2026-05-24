@@ -9,9 +9,12 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
     address: "",
     chiefComplaint: "",
     enquiryStatus: "patient",
+    remark: "",
+    response: "",
+    source: "",
   });
 
-  const [loading , setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (selectedEnquiry) {
@@ -23,6 +26,7 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
         address: "",
         chiefComplaint: selectedEnquiry.chiefComplaint || "",
         enquiryStatus: "patient",
+        remark: selectedEnquiry?.remark || "",
       });
     }
   }, [selectedEnquiry]);
@@ -32,10 +36,18 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-   const validateForm = () => {
+  const validateForm = () => {
     const {
-      name , age , gender , contactNumber , address , chiefComplaint , enquiryStatus
-  
+      name,
+      age,
+      gender,
+      contactNumber,
+      address,
+      chiefComplaint,
+      enquiryStatus,
+      remark,
+      response,
+      source,
     } = formData;
 
     if (
@@ -44,7 +56,11 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
       !age ||
       !contactNumber ||
       !chiefComplaint ||
-      !address || !enquiryStatus
+      !address ||
+      !enquiryStatus ||
+      !remark ||
+      !response ||
+      !source
     ) {
       alert("Please fill all required fields");
       return false;
@@ -66,7 +82,10 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      setLoading(false);
+      return;
+    };
 
     onSubmit(formData);
     setLoading(false);
@@ -74,12 +93,17 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6">
+      <div className="bg-white w-full max-w-3xl rounded-lg shadow-lg p-6 h-[600px] overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Convert Lead to Patient</h2>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-2 gap-6">
-            <Input label="Name" name="name" value={formData.name}  onChange={handleChange} />
+            <Input
+              label="Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+            />
             <Input
               label="Age"
               name="age"
@@ -92,7 +116,6 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
             <Select
               label="Gender"
               value={formData.gender}
-            
               name="gender"
               onChange={handleChange}
               options={["Male", "Female", "Other"]}
@@ -121,7 +144,34 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
             onChange={handleChange}
           />
 
-          <Input label="Status" value="Patient"  readOnly/>
+          <Input label="Status" value="Patient" readOnly />
+
+          <Textarea
+            label="Remark"
+            name="remark"
+            value={formData.remark}
+            onChange={handleChange}
+          />
+          <div className="flex items-center justify-between gap-3">
+            <FormField
+              label="Response"
+              name="response"
+              type="select"
+              options={["Pending", "Done", "Deny"]}
+              value={formData.response}
+              onChange={handleChange}
+              required={true}
+            />
+            <FormField
+              label="Source"
+              name="source"
+              type="select"
+              options={["Walk-in", "Phone", "Referral", "Online"]}
+              value={formData.source}
+              onChange={handleChange}
+              required={true}
+            />
+          </div>
 
           <div className="flex justify-end gap-3 pt-4">
             <button
@@ -136,10 +186,7 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
               disabled={loading}
               className="px-4 py-2 bg-green-600 text-white rounded"
             >
-              {
-                loading ? "Converting..." : "Convert to Patient"
-              }
-             
+              {loading ? "Converting..." : "Convert to Patient"}
             </button>
           </div>
         </form>
@@ -150,9 +197,11 @@ const ConvertToPatientForm = ({ selectedEnquiry, onClose, onSubmit }) => {
 
 /* -------------------- INPUT COMPONENTS -------------------- */
 
-const Input = ({ label,maxLength, readOnly, ...props }) => (
+const Input = ({ label, maxLength, readOnly, ...props }) => (
   <div>
-    <label className="block text-sm font-medium mb-1">{label} <span className="text-red-500">*</span></label>
+    <label className="block text-sm font-medium mb-1">
+      {label} <span className="text-red-500">*</span>
+    </label>
     <input
       {...props}
       readOnly={readOnly}
@@ -166,7 +215,9 @@ const Input = ({ label,maxLength, readOnly, ...props }) => (
 
 const Select = ({ label, options, ...props }) => (
   <div>
-    <label className="block text-sm font-medium mb-1">{label} <span className="text-red-500">*</span></label>
+    <label className="block text-sm font-medium mb-1">
+      {label} <span className="text-red-500">*</span>
+    </label>
     <select {...props} className="w-full border rounded-md p-2 bg-white">
       <option value="">Select</option>
       {options.map((opt) => (
@@ -180,7 +231,9 @@ const Select = ({ label, options, ...props }) => (
 
 const Textarea = ({ label, readOnly, ...props }) => (
   <div>
-    <label className="block text-sm font-medium mb-1">{label} <span className="text-red-500">*</span></label>
+    <label className="block text-sm font-medium mb-1">
+      {label} <span className="text-red-500">*</span>
+    </label>
     <textarea
       {...props}
       readOnly={readOnly}
@@ -189,6 +242,48 @@ const Textarea = ({ label, readOnly, ...props }) => (
         readOnly ? "bg-gray-100 cursor-not-allowed" : ""
       }`}
     />
+  </div>
+);
+
+const FormField = ({
+  label,
+  required,
+  name,
+  value,
+  onChange,
+  type = "text",
+  options = [],
+  maxLength,
+  min,
+}) => (
+  <div className="w-full">
+    <label className="block mb-1 flex gap-2 items-center">
+      {label}
+      {required && <p className="text-red-600">*</p>}
+    </label>
+    {type === "select" ? (
+      <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border p-2 rounded"
+      >
+        <option value="">Select</option>
+        {options.map((o) => (
+          <option key={o}>{o}</option>
+        ))}
+      </select>
+    ) : (
+      <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full border p-2 rounded"
+        maxLength={maxLength}
+        min={min}
+      />
+    )}
   </div>
 );
 

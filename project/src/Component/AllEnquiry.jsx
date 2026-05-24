@@ -34,21 +34,65 @@ const AllEnquiry = () => {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingExcel, setDownloadingExcel] = useState(false);
 
+  const [loadingEnquiries, setLoadingEnquiries] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(9);
+
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalEnquiries: 0,
+    limit: 9,
+    hasPrevPage: false,
+    hasNextPage: false,
+  });
+
   const tabs = ["all", "lead", "patient"];
 
   const fetchAllEnquiries = async () => {
     try {
-      const response = await fetch(`${backendURL}/api/enquiry/getEnquiry`);
+      setLoadingEnquiries(true);
+
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        activeStatus,
+        patientStatus,
+        search: searchTerm.trim(),
+        sortBy,
+      });
+
+      const response = await fetch(
+        `${backendURL}/api/enquiry/getEnquiry?${params.toString()}`,
+      );
+
       const result = await response.json();
+
       setEnquiries(result?.enquiries || []);
+      setPagination(
+        result?.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalEnquiries: 0,
+          limit,
+          hasPrevPage: false,
+          hasNextPage: false,
+        },
+      );
     } catch (error) {
       console.error("Error fetching enquiries:", error);
+    } finally {
+      setLoadingEnquiries(false);
     }
   };
 
   useEffect(() => {
+    setPage(1);
+  }, [activeStatus, patientStatus, searchTerm, sortBy, limit]);
+
+  useEffect(() => {
     fetchAllEnquiries();
-  }, []);
+  }, [page, limit, activeStatus, patientStatus, searchTerm, sortBy]);
 
   useEffect(() => {
     const employeeData = localStorage.getItem("loginEmployeeData");
@@ -75,14 +119,18 @@ const AllEnquiry = () => {
 
   const getFilteredEnquiries = () => {
     let filtered = [...enquiries];
-
-    if (activeStatus === "lead") {
+    if (activeStatus === "all") {
+      filtered = filtered.filter((e) => {
+        const status = e?.patientId?.personalDetails?.patientStatus;
+        return !(e.enquiryStatus === "patient" && status === false);
+      });
+    } else if (activeStatus === "lead") {
       filtered = filtered.filter((e) => e.enquiryStatus === "lead");
     } else if (activeStatus === "patient") {
       filtered = filtered.filter((e) => e.enquiryStatus === "patient");
     }
 
-    if (patientStatus !== "all") {
+    if (activeStatus === "patient" && patientStatus !== "all") {
       filtered = filtered.filter((e) => {
         const status = e?.patientId?.personalDetails?.patientStatus;
 
@@ -120,7 +168,7 @@ const AllEnquiry = () => {
     return data.map((item, index) => ({
       "S.No": index + 1,
       "Enquiry ID": item?._id || "",
-      "Type": item?.enquiryStatus || "",
+      Type: item?.enquiryStatus || "",
       "Patient Status":
         item?.enquiryStatus === "patient"
           ? item?.patientId?.personalDetails?.patientStatus
@@ -128,17 +176,17 @@ const AllEnquiry = () => {
             : "Inactive"
           : "-",
       "Patient Code": item?.patientId?.personalDetails?.patientId || "-",
-      "Name": item?.patientName || "",
-      "Gender": item?.gender || "",
-      "Age": item?.age ?? "",
-      "Occupation": item?.occupation || "",
+      Name: item?.patientName || "",
+      Gender: item?.gender || "",
+      Age: item?.age ?? "",
+      Occupation: item?.occupation || "",
       "Contact Number": item?.contactNumber || "",
-      "Email": item?.email || "",
+      Email: item?.email || "",
       "Chief Complaint": item?.chiefComplaint || "",
-      "Remark": item?.remark || "",
-      "Response": item?.response || "",
-      "Source": item?.source || "",
-      "Address": item?.patientId?.personalDetails?.address || "-",
+      Remark: item?.remark || "",
+      Response: item?.response || "",
+      Source: item?.source || "",
+      Address: item?.patientId?.personalDetails?.address || "-",
       "Attendance Count": item?.patientId?.attendance?.length || 0,
       "Billing Count": item?.patientId?.billing?.length || 0,
       "Treatment Count": item?.patientId?.treatment?.length || 0,
@@ -158,19 +206,20 @@ const AllEnquiry = () => {
     const total = data.length;
     const leads = data.filter((item) => item.enquiryStatus === "lead").length;
     const patients = data.filter(
-      (item) => item.enquiryStatus === "patient"
+      (item) => item.enquiryStatus === "patient",
     ).length;
     const activePatients = data.filter(
       (item) =>
         item.enquiryStatus === "patient" &&
-        item?.patientId?.personalDetails?.patientStatus === true
+        item?.patientId?.personalDetails?.patientStatus === true,
     ).length;
     const inactivePatients = data.filter(
       (item) =>
         item.enquiryStatus === "patient" &&
-        item?.patientId?.personalDetails?.patientStatus === false
+        item?.patientId?.personalDetails?.patientStatus === false,
     ).length;
-    const conversionRate = total > 0 ? ((patients / total) * 100).toFixed(2) : 0;
+    const conversionRate =
+      total > 0 ? ((patients / total) * 100).toFixed(2) : 0;
 
     return {
       total,
@@ -260,7 +309,7 @@ const AllEnquiry = () => {
           patientStatus={patientStatus}
           searchTerm={searchTerm}
           sortBy={sortBy}
-        />
+        />,
       ).toBlob();
 
       saveAs(blob, getExportFileName("pdf"));
@@ -300,7 +349,7 @@ const AllEnquiry = () => {
 
   const handleConvertToPatient = async (data) => {
     const confirmConvert = window.confirm(
-      "Are you sure you want to convert this enquiry into patient?"
+      "Are you sure you want to convert this enquiry into patient?",
     );
 
     if (!confirmConvert) return;
@@ -353,7 +402,7 @@ const AllEnquiry = () => {
                 : undefined,
             remark: editData.remark,
           }),
-        }
+        },
       );
 
       const result = await response.json();
@@ -375,7 +424,7 @@ const AllEnquiry = () => {
 
   const handleDeleteEnquiry = async (enquiryId) => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete this enquiry?"
+      "Are you sure you want to delete this enquiry?",
     );
 
     if (!confirmDelete) return;
@@ -391,7 +440,7 @@ const AllEnquiry = () => {
             "Content-Type": "application/json",
             token: localStorage.getItem("webapptoken"),
           },
-        }
+        },
       );
 
       const result = await response.json();
@@ -419,7 +468,10 @@ const AllEnquiry = () => {
         {tabs?.map((s) => (
           <button
             key={s}
-            onClick={() => setActiveStatus(s)}
+            onClick={() => {
+              setActiveStatus(s);
+              if (s !== "patient") setPatientStatus("all");
+            }}
             className={`px-4 py-2 rounded ${
               activeStatus === s ? "bg-blue-600 text-white" : "bg-gray-200"
             }`}
@@ -429,7 +481,7 @@ const AllEnquiry = () => {
         ))}
         <p className="text-black font-semibold">
           Total Enquiry :-{" "}
-          <span className="text-gray-600">{filteredEnquiries?.length}</span>
+          <span className="text-gray-600">{pagination.totalEnquiries}</span>
         </p>
       </div>
 
@@ -449,6 +501,17 @@ const AllEnquiry = () => {
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
+        </select>
+
+        <select
+          value={limit}
+          onChange={(e) => setLimit(Number(e.target.value))}
+          className="px-4 py-2 border rounded w-full md:w-1/4"
+        >
+          <option value={6}>6 / page</option>
+          <option value={9}>9 / page</option>
+          <option value={12}>12 / page</option>
+          <option value={24}>24 / page</option>
         </select>
 
         {activeStatus === "patient" && (
@@ -483,7 +546,12 @@ const AllEnquiry = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredEnquiries.length === 0 ? (
+        {loadingEnquiries ? (
+          <div className="col-span-full flex justify-center items-center py-12 text-blue-600 gap-2">
+            <AiOutlineLoading3Quarters className="animate-spin" />
+            Loading enquiries...
+          </div>
+        ) : filteredEnquiries.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <p className="text-lg font-medium text-gray-600">
               No enquiries match your filters
@@ -582,6 +650,39 @@ const AllEnquiry = () => {
           ))
         )}
       </div>
+
+      {pagination.totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 mb-8">
+          <p className="text-sm text-gray-600">
+            Page {pagination.currentPage} of {pagination.totalPages} • Total{" "}
+            {pagination.totalEnquiries}
+          </p>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+              disabled={!pagination.hasPrevPage || loadingEnquiries}
+              className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              Previous
+            </button>
+
+            <span className="px-4 py-2 bg-blue-600 text-white rounded">
+              {pagination.currentPage}
+            </span>
+
+            <button
+              onClick={() =>
+                setPage((prev) => Math.min(prev + 1, pagination.totalPages))
+              }
+              disabled={!pagination.hasNextPage || loadingEnquiries}
+              className="px-4 py-2 border rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       {showEditModal && selectedEnquiry && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">

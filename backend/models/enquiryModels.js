@@ -32,7 +32,7 @@ const enquirySchema = new mongoose.Schema({
   },
   chiefComplaint: {
     type: String,
-    required: true,
+    // required: true,
   },
   remark: {
     type: String,
@@ -40,12 +40,12 @@ const enquirySchema = new mongoose.Schema({
   response: {
     type: String,
     enum: ["Pending", "Done", "Deny"],
-    required: true,
+    // required: true,
   },
   source: {
     type: String,
     enum: ["Walk-in", "Phone", "Referral", "Online"],
-    required: true,
+    // required: true,
   },
   paymentStatus: {
     type: String,

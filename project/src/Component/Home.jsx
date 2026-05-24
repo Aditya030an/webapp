@@ -13,10 +13,10 @@ const EnquiryForm = () => {
     occupation: "",
     contactNumber: "",
     email: "",
-    chiefComplaint: "",
-    remark:"",
-    response: "",
-    source: "",
+    // chiefComplaint: "",
+    // remark:"",
+    // response: "",
+    // source: "",
     // paymentStatus: "",
     // amountPerDay: "",
     // numberOfDays: "",
@@ -53,9 +53,9 @@ const EnquiryForm = () => {
       age,
       occupation,
       contactNumber,
-      chiefComplaint,
-      response,
-      source,
+      // chiefComplaint,
+      // response,
+      // source,
       email,
     } = formData;
 
@@ -64,10 +64,7 @@ const EnquiryForm = () => {
       !gender ||
       !age ||
       !occupation ||
-      !contactNumber ||
-      !chiefComplaint ||
-      !response ||
-      !source
+      !contactNumber 
     ) {
       alert("Please fill all required fields");
       return false;
@@ -116,10 +113,10 @@ const EnquiryForm = () => {
           occupation: "",
           contactNumber: "",
           email: "",
-          chiefComplaint: "",
-          remark:"",
-          response: "",
-          source: "",
+          // chiefComplaint: "",
+          // remark:"",
+          // response: "",
+          // source: "",
         });
       }
     } catch (error) {
@@ -186,7 +183,7 @@ const EnquiryForm = () => {
               value={formData.email}
               onChange={handleChange}
             />
-            <FormField
+            {/* <FormField
               label="Chief Complaint"
               name="chiefComplaint"
               value={formData.chiefComplaint}
@@ -216,7 +213,7 @@ const EnquiryForm = () => {
               value={formData.source}
               onChange={handleChange}
                  required={true}
-            />
+            /> */}
             {/* <FormField
               label="Payment Status"
               name="paymentStatus"

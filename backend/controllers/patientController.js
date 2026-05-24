@@ -35,12 +35,29 @@ const createPatient = async (req, res) => {
       contactNumber,
       chiefComplaint,
       enquiryId,
+      remark,
+      response,
+      source,
     } = req.body;
 
     if (!enquiryId) {
       return res.status(400).json({
         success: false,
         message: "enquiryId is required",
+      });
+    }
+
+    if(!response){
+       return res.status(400).json({
+        success: false,
+        message: "response is required",
+      });
+    }
+
+    if(!source){
+       return res.status(400).json({
+        success: false,
+        message: "source is required",
       });
     }
 
@@ -67,6 +84,9 @@ const createPatient = async (req, res) => {
         age,
         contactNumber,
         chiefComplaint,
+        remark,
+        response,
+        source,
         enquiryStatus: "patient",
         patientId: patient._id,
       },
@@ -151,7 +171,7 @@ const getPatientById = async (req, res) => {
 const updatedPatientStatus = async (req, res) => {
   try {
     const { patientId, patientStatus, enquiryId, remark } = req.body;
-  
+
     if (!enquiryId) {
       return res.status(400).json({
         success: false,
