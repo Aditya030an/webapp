@@ -309,6 +309,9 @@ const createObesityForm = async (req, res) => {
     const { patientId, formData } = req.body;
     const loginEmployeeId = req.id;
 
+    console.log("req body" , req.body);
+    console.log("login Employee Id" , req.id);
+
     if (!patientId || !formData) {
       return res.status(400).json({
         success: false,

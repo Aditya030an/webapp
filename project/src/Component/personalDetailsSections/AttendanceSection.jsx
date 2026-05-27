@@ -1,17 +1,39 @@
-import React, { useState } from "react";
-import { pdf, PDFDownloadLink } from "@react-pdf/renderer";
-import AttendancePdf from "../pdf/AttendancePdf";
-import PdfAssessmentContent from "../pdf/PdfAssessmentContent";
+import React, { useMemo, useState } from "react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import PdfAttendanceContent from "../pdf/PdfAttendanceContent";
 
-const AttendanceSection = ({ attendance, patientDetail }) => {
-  // console.log("att", attendance);
+const AttendanceSection = ({ attendance = [], patientDetail }) => {
   const currentDate = new Date().toISOString().split("T")[0];
+
   const [date, setDate] = useState(currentDate);
   const [status, setStatus] = useState("Present");
   const [loading, setLoading] = useState(false);
-  const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
   const [selectedMonth, setSelectedMonth] = useState("");
+
+  const monthOptions = useMemo(() => {
+    const months = attendance
+      ?.filter((a) => a.date)
+      .map((a) => {
+        const value = new Date(a.date).toISOString().slice(0, 7);
+
+        return {
+          value,
+          label: new Date(value + "-01").toLocaleString("en-IN", {
+            month: "long",
+            year: "numeric",
+          }),
+        };
+      });
+
+    return [...new Map(months.map((item) => [item.value, item])).values()];
+  }, [attendance]);
+
+  const filteredAttendance = selectedMonth
+    ? attendance.filter((a) => {
+        const recordMonth = new Date(a.date).toISOString().slice(0, 7);
+        return recordMonth === selectedMonth;
+      })
+    : attendance;
 
   const handleSubmit = async () => {
     if (!date || !status) {
@@ -20,6 +42,7 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
     }
 
     setLoading(true);
+
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/attendance/createAttendance`,
@@ -34,13 +57,14 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
             date,
             status,
           }),
-        },
+        }
       );
 
       const result = await res.json();
+
       if (result.success) {
         alert("Attendance added");
-        window.location.reload(); // or refetch patient
+        window.location.reload();
       } else {
         alert(result.message);
       }
@@ -52,44 +76,39 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
     }
   };
 
-  const downloadAttendancePdf = async (attendance, patientDetail) => {
-    const blob = await pdf(
-      <AttendancePdf attendance={attendance} patientDetail={patientDetail} />,
-    ).toBlob();
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "attendance-report.pdf";
-    link.click();
-  };
-
-  const filteredAttendance = selectedMonth
-    ? attendance?.filter((a) => {
-        const recordMonth = new Date(a.date).toISOString().slice(0, 7);
-        return recordMonth === selectedMonth;
-      })
-    : attendance;
-
   return (
-    <section className="border rounded-lg p-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-lg mb-3">Attendance</h2>
+    <section className="border rounded-lg p-3 sm:p-4 bg-white">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
+        <h2 className="font-semibold text-lg">
+          Attendance{" "}
+          <span className="text-gray-600 font-medium text-sm">
+            ({filteredAttendance?.length || 0})
+          </span>
+        </h2>
 
-        <div className="flex items-center gap-2 mb-3">
-          <label className="text-sm text-gray-600">Filter by month:</label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
+          <label className="text-sm text-gray-600 whitespace-nowrap">
+            Filter by month:
+          </label>
 
-          <input
-            type="month"
+          <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(e.target.value)}
-            className="border px-2 py-1 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+            className="border px-3 py-2 rounded text-sm w-full sm:w-52 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          >
+            <option value="">All Months</option>
+
+            {monthOptions.map((month) => (
+              <option key={month.value} value={month.value}>
+                {month.label}
+              </option>
+            ))}
+          </select>
 
           {selectedMonth && (
             <button
               onClick={() => setSelectedMonth("")}
-              className="text-xs text-blue-600 hover:underline"
+              className="text-sm text-blue-600 hover:underline text-left sm:text-center"
             >
               Clear
             </button>
@@ -97,19 +116,18 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
         </div>
       </div>
 
-      {/* ➕ ADD ATTENDANCE FORM */}
-      <div className="flex flex-wrap gap-2 items-center mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:items-center gap-2 mb-4">
         <input
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          className="border px-2 py-1 rounded text-sm"
+          className="border px-3 py-2 rounded text-sm "
         />
 
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className="border px-2 py-1 rounded text-sm"
+          className="border px-3 py-2 rounded text-sm "
         >
           <option value="Present">Present</option>
           <option value="Absent">Absent</option>
@@ -118,25 +136,11 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
         <button
           disabled={loading}
           onClick={handleSubmit}
-          className="px-3 py-1 text-sm border rounded bg-blue-600 text-white hover:bg-blue-700"
+          className="px-4 py-2 text-sm border rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 w-full lg:w-auto"
         >
           {loading ? "Saving..." : "Add"}
         </button>
-        {/* <PDFDownloadLink
-          document={
-            <PdfAttendanceContent
-              attendance={attendance}
-              patient={patientDetail?.personalDetails}
-            />
-          }
-          fileName={`Attendance-${patientDetail?.personalDetails?.name}.pdf`}
-        >
-          {({ loading }) => (
-            <button className="px-3 w-full bg-green-600 text-white py-1 rounded-md text-sm hover:bg-green-700">
-              {loading ? "Generating PDF..." : "Download PDF"}
-            </button>
-          )}
-        </PDFDownloadLink> */}
+
         <PDFDownloadLink
           document={
             <PdfAttendanceContent
@@ -150,9 +154,10 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
               ? `Attendance-${patientDetail?.personalDetails?.name}-${selectedMonth}.pdf`
               : `Attendance-${patientDetail?.personalDetails?.name}-All.pdf`
           }
+          className="w-full lg:w-auto"
         >
           {({ loading }) => (
-            <button className="px-3 w-full bg-green-600 text-white py-1 rounded-md text-sm hover:bg-green-700">
+            <button className="px-4 py-2 w-full bg-green-600 text-white rounded-md text-sm hover:bg-green-700">
               {loading ? "Generating PDF..." : "Download PDF"}
             </button>
           )}
@@ -169,28 +174,30 @@ const AttendanceSection = ({ attendance, patientDetail }) => {
         </p>
       )}
 
-      {/* 📋 ATTENDANCE LIST */}
-      {/* 📋 ATTENDANCE TABLE */}
       {filteredAttendance?.length === 0 ? (
         <p className="text-sm text-gray-500">No attendance records</p>
       ) : (
         <div className="overflow-x-auto max-h-[300px] overflow-y-auto">
-          <table className="w-full border text-sm">
-            <thead className="bg-gray-100">
+          <table className="min-w-[500px] w-full border text-sm">
+            <thead className="bg-gray-100 sticky top-0">
               <tr>
                 <th className="border px-3 py-2 text-left">Date</th>
                 <th className="border px-3 py-2 text-left">Status</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredAttendance.map((a, i) => (
-                <tr key={i}>
-                  <td className="border px-3 py-2">
+                <tr key={a._id || i}>
+                  <td className="border px-3 py-2 whitespace-nowrap">
                     {new Date(a.date).toLocaleDateString("en-IN")}
                   </td>
+
                   <td
                     className={`border px-3 py-2 font-medium ${
-                      a.status === "Present" ? "text-green-600" : "text-red-600"
+                      a.status === "Present"
+                        ? "text-green-600"
+                        : "text-red-600"
                     }`}
                   >
                     {a.status}

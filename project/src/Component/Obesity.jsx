@@ -117,7 +117,7 @@ const Obesity = () => {
         method,
         headers: {
           "Content-Type": "application/json",
-          token: localStorage.getItem("token"),
+          token: localStorage.getItem("webapptoken"),
         },
         body: JSON.stringify(payLoad),
       });
