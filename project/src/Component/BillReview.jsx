@@ -64,8 +64,8 @@ const BillReview = ({ bill, onClose, onConfirm }) => {
         <div className="mb-4">
           <h3 className="font-semibold text-gray-800 mb-1">Items</h3>
           <ul className="list-disc pl-5 space-y-1">
-            {bill?.items?.map((item) => (
-              <li key={item._id} className="text-sm text-gray-700">
+            {bill?.items?.map((item, idx) => (
+              <li key={item._id || idx} className="text-sm text-gray-700">
                 {item.name} — {item.qty.toLocaleString()} × ₹
                 {item.price.toLocaleString()} = ₹
                 {(item.qty * item.price).toLocaleString("en-IN", {

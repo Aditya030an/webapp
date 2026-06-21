@@ -69,6 +69,7 @@ const PatientDetails = () => {
       <AttendanceSection
         attendance={attendance}
         patientDetail={patientDetail}
+        billing={billing}
       />
 
       {/* ================= BILLING ================= */}

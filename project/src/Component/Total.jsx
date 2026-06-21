@@ -6,77 +6,106 @@ import { exportToExcel } from "../utils/exportToExcel";
 
 const Total = () => {
   const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
-      const urls = ["bill", "expenses", "inventory", "rent", "salary"].map(
-        (type) => `${import.meta.env.VITE_BACKEND_URL}/api/report/${type}`,
-      );
+      setLoading(true);
+      setError("");
 
-      const responses = await Promise.all(urls.map((u) => fetch(u)));
-      const [billData, expensesData, inventoryData, rentData, salaryData] =
-        await Promise.all(responses.map((r) => r.json()));
-
-      const isMatch = (dateStr) => {
-        const d = new Date(dateStr);
-        return (
-          (!selectedMonth || d.getMonth() + 1 === Number(selectedMonth)) &&
-          (!selectedYear || d.getFullYear() === Number(selectedYear))
+      try {
+        const urls = ["bill", "expenses", "inventory", "rent", "salary"].map(
+          (type) => `${import.meta.env.VITE_BACKEND_URL}/api/report/${type}`,
         );
-      };
 
-      /* ===== INCOME ===== */
-      const bills = billData.data.filter((b) => isMatch(b.date));
+        const responses = await Promise.all(urls.map((u) => fetch(u)));
 
-      // const billed = bills.reduce((s, b) => s + b.total, 0);
-      // const received = bills.reduce(
-      //   (s, b) => s + Math.min(b.total, b.advancePayment || 0),
-      //   0,
-      // );
-      // const pending = billed - received;
-      // const wallet = bills.reduce((s, b) => s + (b.amountInWallet || 0), 0);
+        responses.forEach((r) => {
+          if (!r.ok) throw new Error(`Request failed (${r.status})`);
+        });
 
-      const billed = bills.reduce((s, b) => s + b.total, 0);
+        const [billData, expensesData, inventoryData, rentData, salaryData] =
+          await Promise.all(responses.map((r) => r.json()));
 
-      const received = bills
-        .filter((b) => b.paymentStatus === "Paid")
-        .reduce((s, b) => s + b.total, 0);
+        // Backend wraps each list as { success, data: [...] }. Guard against
+        // missing/unexpected shapes so a single bad response can't blank the page.
+        const asArray = (res) => (Array.isArray(res?.data) ? res.data : []);
 
-      const pending = bills
-        .filter((b) => b.paymentStatus === "Unpaid")
-        .reduce((s, b) => s + b.total, 0);
+        const isMatch = (dateStr) => {
+          const d = new Date(dateStr);
+          if (Number.isNaN(d.getTime())) return false;
+          return (
+            (!selectedMonth || d.getMonth() + 1 === Number(selectedMonth)) &&
+            (!selectedYear || d.getFullYear() === Number(selectedYear))
+          );
+        };
 
-      const wallet = bills.reduce((s, b) => s + (b.amountInWallet || 0), 0);
+        /* ===== INCOME ===== */
+        const bills = asArray(billData).filter((b) => isMatch(b.date));
 
-      /* ===== OUTGOING ===== */
-      const expenses = expensesData.data
-        .filter((e) => isMatch(e.date))
-        .reduce((s, e) => s + e.total, 0);
+        const billed = bills.reduce((s, b) => s + (b.total || 0), 0);
 
-      const inventory = inventoryData.data
-        .filter((i) => isMatch(i.createdAt))
-        .reduce((s, i) => s + i.total, 0);
+        // Received = full total of Paid bills + any advance recorded on Unpaid
+        // bills (capped at the bill total). Pending is whatever is left.
+        const received = bills.reduce((s, b) => {
+          const total = b.total || 0;
+          if (b.paymentStatus === "Paid") return s + total;
+          return s + Math.min(b.advancePayment || 0, total);
+        }, 0);
 
-      const rent = rentData.data
-        .filter((r) => isMatch(r.dueDate))
-        .reduce((s, r) => s + r.amount, 0);
+        const pending = billed - received;
 
-      const salary = salaryData.data.reduce((s, sal) => s + sal.totalSalary, 0);
+        const wallet = bills.reduce((s, b) => s + (b.amountInWallet || 0), 0);
 
-      setData({
-        income: { billed, received, pending, wallet },
-        outgoing: { expenses, inventory, rent, salary },
-      });
+        /* ===== OUTGOING ===== */
+        const expenses = asArray(expensesData)
+          .filter((e) => isMatch(e.date))
+          .reduce((s, e) => s + (e.total || 0), 0);
+
+        const inventory = asArray(inventoryData)
+          .filter((i) => isMatch(i.createdAt))
+          .reduce((s, i) => s + (i.total || 0), 0);
+
+        const rent = asArray(rentData)
+          .filter((r) => isMatch(r.dueDate))
+          .reduce((s, r) => s + (r.amount || 0), 0);
+
+        // Salary is intentionally shown as an all-time total (not filtered by
+        // the Month/Year selector).
+        const salary = asArray(salaryData).reduce(
+          (s, sal) => s + (sal.totalSalary || 0),
+          0,
+        );
+
+        setData({
+          income: { billed, received, pending, wallet },
+          outgoing: { expenses, inventory, rent, salary },
+        });
+      } catch (err) {
+        console.error("Failed to load financial report:", err);
+        setError("Failed to load report data. Please try again.");
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
   }, [selectedMonth, selectedYear]);
 
-  console.log("data", data);
+  if (loading) return <p className="p-6">Loading report...</p>;
 
-  if (!data) return <p className="p-6">Loading report...</p>;
+  if (error)
+    return (
+      <div className="p-6">
+        <p className="text-red-600 font-medium">{error}</p>
+      </div>
+    );
+
+  if (!data) return <p className="p-6">No report data available.</p>;
 
   const totalOutgoing =
     data.outgoing.expenses +
@@ -239,7 +268,7 @@ const Total = () => {
             <Stat label="Expenses" value={data.outgoing.expenses} />
             <Stat label="Inventory" value={data.outgoing.inventory} />
             <Stat label="Rent" value={data.outgoing.rent} />
-            <Stat label="Salary" value={data.outgoing.salary} />
+            <Stat label="Salary (all-time)" value={data.outgoing.salary} />
           </Grid>
         </Section>
 
@@ -258,7 +287,7 @@ const Total = () => {
           <CalcLine text={`Expenses = ₹${data.outgoing.expenses}`} />
           <CalcLine text={`Inventory = ₹${data.outgoing.inventory}`} />
           <CalcLine text={`Rent = ₹${data.outgoing.rent}`} />
-          <CalcLine text={`Salary = ₹${data.outgoing.salary}`} />
+          <CalcLine text={`Salary (all-time) = ₹${data.outgoing.salary}`} />
           <CalcLine bold text={`Total Outgoing = ₹${totalOutgoing}`} />
         </Section>
 

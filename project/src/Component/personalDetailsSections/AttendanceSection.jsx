@@ -2,8 +2,18 @@ import React, { useMemo, useState } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import PdfAttendanceContent from "../pdf/PdfAttendanceContent";
 
-const AttendanceSection = ({ attendance = [], patientDetail }) => {
+const AttendanceSection = ({ attendance = [], patientDetail, billing = [] }) => {
   const currentDate = new Date().toISOString().split("T")[0];
+
+  // --- Billing summary (counter model: days billed lives on the bills) ---
+  const totalPresent = attendance.filter((a) => a?.status === "Present").length;
+  // Prefer stored sessionsBilled; fall back to the session row (items[0].qty)
+  // so a bill saved without the field still counts toward "billed".
+  const billedSessions = billing.reduce(
+    (s, b) => s + (b?.sessionsBilled || b?.items?.[0]?.qty || 0),
+    0,
+  );
+  const remainingSessions = Math.max(0, totalPresent - billedSessions);
 
   const [date, setDate] = useState(currentDate);
   const [status, setStatus] = useState("Present");
@@ -79,12 +89,32 @@ const AttendanceSection = ({ attendance = [], patientDetail }) => {
   return (
     <section className="border rounded-lg p-3 sm:p-4 bg-white">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-4">
-        <h2 className="font-semibold text-lg">
-          Attendance{" "}
-          <span className="text-gray-600 font-medium text-sm">
-            ({filteredAttendance?.length || 0})
-          </span>
-        </h2>
+        <div>
+          <h2 className="font-semibold text-lg">
+            Attendance{" "}
+            <span className="text-gray-600 font-medium text-sm">
+              ({filteredAttendance?.length || 0})
+            </span>
+          </h2>
+          <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-600">
+            <span>
+              Present: <b className="text-gray-900">{totalPresent}</b>
+            </span>
+            <span>
+              Billed: <b className="text-gray-900">{billedSessions}</b>
+            </span>
+            <span>
+              Remaining to bill:{" "}
+              <b
+                className={
+                  remainingSessions > 0 ? "text-blue-600" : "text-green-600"
+                }
+              >
+                {remainingSessions}
+              </b>
+            </span>
+          </div>
+        </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
           <label className="text-sm text-gray-600 whitespace-nowrap">

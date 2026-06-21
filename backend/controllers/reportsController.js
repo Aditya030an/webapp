@@ -33,9 +33,16 @@ const createBill = async (req, res) => {
         : 0;
     // console.log("remainingBalance", remainingBalance);
 
+    // Days this bill covers. Trust the value the client sends, but fall back to
+    // the first item row (the session/days row) so an out-of-date client can
+    // never silently save 0 — this is what keeps the "remaining days" count correct.
+    const sessionsBilled =
+      Number(formData.sessionsBilled ?? formData.items?.[0]?.qty) || 0;
+
     const newBill = await billModel.create({
       patientId,
       ...formData,
+      sessionsBilled,
       amountInWallet: remainingBalance,
       advancePayment:
         Number(formData.advancePayment) + Number(formData.amountInWallet),

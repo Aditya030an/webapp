@@ -32,6 +32,10 @@ const billSchema = new mongoose.Schema(
     total: { type: Number, required: true },
     advancePayment: { type: Number, default: 0 },
 
+    // Number of present/treatment days this bill covers. Used to compute how
+    // many days are still un-billed (remaining = total present days − Σ sessionsBilled).
+    sessionsBilled: { type: Number, default: 0 },
+
 
     patientId: { type: mongoose.Schema.Types.ObjectId, ref: "Patient" },
   },

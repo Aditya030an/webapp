@@ -101,8 +101,9 @@ const getEnquiry = async (req, res) => {
 
     let enquiries = await enquiryModel
       .find(query)
-      .populate("patientId")
-      .sort({ createdAt: sortBy === "newest" ? -1 : 1 });
+      .populate({ path: "patientId", select: "personalDetails" })
+      .sort({ createdAt: sortBy === "newest" ? -1 : 1 })
+      .lean();
 
     enquiries = enquiries.filter((enquiry) => {
       const status = enquiry?.patientId?.personalDetails?.patientStatus;

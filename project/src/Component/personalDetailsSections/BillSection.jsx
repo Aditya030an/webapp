@@ -12,9 +12,26 @@ const BillSection = ({ fetchData, billing, patientDetail, attendance }) => {
   const [editId, setEditId] = useState(null);
   const [updateStatus, setUpdateStatus] = useState(null);
 
+  // --- Session/day billing summary ---
+  const totalPresent = (attendance || []).filter(
+    (a) => a?.status === "Present",
+  ).length;
+  // Days billed per bill. Prefer the stored sessionsBilled; fall back to the
+  // session row (items[0].qty) so a bill saved without the field still counts.
+  const alreadyBilled = (billing || []).reduce(
+    (s, b) => s + (b?.sessionsBilled || b?.items?.[0]?.qty || 0),
+    0,
+  );
+  const remainingSessions = Math.max(0, totalPresent - alreadyBilled);
+
   const goTo = (path) => {
     navigate(path, {
-      state: { patient: patientDetail, attendance, previousBills: billing },
+      state: {
+        patient: patientDetail,
+        attendance,
+        previousBills: billing,
+        remainingSessions,
+      },
     });
   };
 
@@ -53,12 +70,38 @@ const BillSection = ({ fetchData, billing, patientDetail, attendance }) => {
     <section className="border rounded-lg p-4">
       <h2 className="font-semibold text-lg mb-3">Billing</h2>
 
+      {/* Session/day billing summary */}
+      <div className="flex flex-wrap items-center gap-4 mb-3 text-sm">
+        <span className="text-gray-600">
+          Present days: <b className="text-gray-900">{totalPresent}</b>
+        </span>
+        <span className="text-gray-600">
+          Billed: <b className="text-gray-900">{alreadyBilled}</b>
+        </span>
+        <span className="text-gray-600">
+          Remaining to bill:{" "}
+          <b className={remainingSessions > 0 ? "text-blue-600" : "text-green-600"}>
+            {remainingSessions}
+          </b>
+        </span>
+      </div>
+
       <button
         onClick={() => goTo("/createBill")}
-        className="px-3 py-1 mb-2 text-sm border rounded hover:bg-gray-100"
+        disabled={remainingSessions === 0}
+        className={`px-3 py-1 mb-2 text-sm border rounded ${
+          remainingSessions === 0
+            ? "opacity-50 cursor-not-allowed"
+            : "hover:bg-gray-100"
+        }`}
       >
         Generate Bill
       </button>
+      {remainingSessions === 0 && (
+        <p className="text-xs text-gray-500 mb-2">
+          All present days have been billed.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
         {billing?.length === 0 ? (

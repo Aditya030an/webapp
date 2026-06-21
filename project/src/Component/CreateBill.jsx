@@ -11,8 +11,23 @@ const CreateBill = () => {
   const patientDetail = location?.state?.patient?.personalDetails;
   const patient_id = location?.state?.patient?._id;
   const attendance = location?.state?.patient?.attendance;
-  const previousBill = location?.state?.previousBills;
-  const amountInWallet = previousBill[0]?.amountInWallet || 0;
+  const previousBill = location?.state?.previousBills || [];
+
+  // Wallet carries forward from the MOST RECENT bill (bills are pushed in
+  // creation order, so sort by createdAt and take the last one).
+  const sortedBills = [...previousBill].sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+  );
+  const latestBill = sortedBills[sortedBills.length - 1];
+  const amountInWallet = latestBill?.amountInWallet || 0;
+
+  // Days already billed across all of this patient's previous bills.
+  // Prefer stored sessionsBilled; fall back to the session row (items[0].qty)
+  // so a bill saved without the field still counts.
+  const alreadyBilledSessions = previousBill.reduce(
+    (sum, b) => sum + (b.sessionsBilled || b?.items?.[0]?.qty || 0),
+    0,
+  );
   // console.log("revious bill", previousBill);
   // console.log("amount In Wallet", amountInWallet);
 
@@ -41,17 +56,20 @@ const CreateBill = () => {
         (item) => item?.status === "Present",
       ).length;
 
+      // Only the days NOT yet billed should default onto a new bill.
+      const remaining = Math.max(0, presentCount - alreadyBilledSessions);
+
       setCustomer(patientDetail?.name);
 
       setItems([
         {
-          name: "",
-          qty: presentCount, // ✅ number of present days
+          name: "Physiotherapy Session", // default; editable. Bill schema requires a name.
+          qty: remaining, // ✅ remaining (un-billed) present days
           price: 0,
         },
       ]);
     }
-  }, [patientDetail, attendance]);
+  }, [patientDetail, attendance, alreadyBilledSessions]);
 
   const handleItemChange = (index, field, value) => {
     const updatedItems = [...items];
@@ -105,6 +123,18 @@ const CreateBill = () => {
   }, []);
 
   const handleSubmit = async () => {
+    // Validate before hitting the API — the Bill schema requires a date and a
+    // name on every item, so catch blanks here with a clear message.
+    if (!date) {
+      alert("Please select a date.");
+      return;
+    }
+    const invalidItem = items.find((it) => !it.name?.trim());
+    if (invalidItem) {
+      alert("Please enter a Service Name for every item.");
+      return;
+    }
+
     const formData = {
       billNumber,
       billType,
@@ -116,6 +146,9 @@ const CreateBill = () => {
       total: total - discount,
       advancePayment,
       amountInWallet,
+      // First item row is the session/days row — record how many days this
+      // bill covers so the next bill can subtract it.
+      sessionsBilled: Number(items[0]?.qty) || 0,
     };
 
     const payLoad = {
