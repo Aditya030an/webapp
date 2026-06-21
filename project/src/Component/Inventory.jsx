@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import html2pdf from "html2pdf.js";
+import { useState, useEffect } from "react";
 import InventoryReportPdf from "./pdf/InventoryReportPdf";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import { exportToExcel } from "../utils/exportToExcel";
+import { fetchReport, MONTHS, YEARS, formatINR } from "../utils/reportFetch";
+import {
+  ReportPage,
+  Card,
+  ReportToolbar,
+  Tile,
+  TallyLine,
+  Loading,
+  ErrorState,
+  EmptyState,
+  EXCEL_BTN,
+  PDF_BTN,
+  PRIMARY_BTN,
+} from "./reports/ReportUI";
 
 const Inventory = () => {
   const currentDate = new Date().toISOString().split("T")[0];
@@ -13,9 +25,8 @@ const Inventory = () => {
   const [inventoryData, setInventoryData] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
-  const [filteredInventory, setFilteredInventory] = useState([]);
-
-  console.log("filterInventory", filteredInventory);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleItemChange = (index, field, value) => {
     const updated = [...items];
@@ -37,42 +48,27 @@ const Inventory = () => {
   );
 
   const fetchInventoryData = async () => {
+    setLoading(true);
+    setError("");
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/inventory`,
-      );
-      const result = await response.json();
-      if (result.success) {
-        setInventoryData(result.data);
-      }
-    } catch (error) {
-      console.error("Error fetching Inventory data:", error);
+      const data = await fetchReport("inventory", {
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      setInventoryData(data);
+    } catch (err) {
+      console.error("Error fetching Inventory data:", err);
+      setError("Failed to load inventory records. Please try again.");
+      setInventoryData([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchInventoryData();
-  }, []);
-
-  // console.log("filteredInventory", filteredInventory);
-
-  useEffect(() => {
-    if (!selectedMonth && !selectedYear) {
-      setFilteredInventory(inventoryData);
-    } else {
-      const filtered = inventoryData.filter((order) => {
-        const d = new Date(order.createdAt);
-        const matchMonth = selectedMonth
-          ? d.getMonth() + 1 === Number(selectedMonth)
-          : true;
-        const matchYear = selectedYear
-          ? d.getFullYear() === Number(selectedYear)
-          : true;
-        return matchMonth && matchYear;
-      });
-      setFilteredInventory(filtered);
-    }
-  }, [inventoryData, selectedMonth, selectedYear]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, selectedYear]);
 
   const handleSubmit = async () => {
     const formData = {
@@ -91,78 +87,34 @@ const Inventory = () => {
       const result = await response.json();
       alert(result.message);
       fetchInventoryData();
-      setItems([{ name: "", quantity: 0, unitPrice: 0 }]);
+      setItems([{ name: "", date: currentDate, quantity: 0, unitPrice: 0 }]);
     } catch (err) {
       console.error("Error submitting inventory:", err);
       alert("Failed to submit inventory");
     }
   };
 
-  const filteredTotal = filteredInventory.reduce(
+  const filteredTotal = inventoryData.reduce(
     (sum, entry) => sum + entry.total,
     0,
   );
 
-  const generatePDF = () => {
-    if (!filteredInventory.length) return alert("No data to export");
+  const monthName = selectedMonth
+    ? MONTHS.find((m) => m.value === selectedMonth)?.label
+    : null;
+  let periodLabel = "All time";
+  if (selectedMonth && selectedYear) {
+    periodLabel = `${monthName} ${selectedYear}`;
+  } else if (selectedYear) {
+    periodLabel = `Year ${selectedYear}`;
+  } else if (selectedMonth) {
+    periodLabel = `${monthName} (all years)`;
+  }
 
-    const content = `
-  <div style="font-family: Arial; padding: 20px;">
-    <h2 style="text-align: center;">Inventory Report</h2>
-    <p><strong>Month:</strong> ${selectedMonth ? new Date(0, selectedMonth - 1).toLocaleString("default", { month: "long" }) : "All Months"}</p>
-    <p><strong>Year:</strong> ${selectedYear || "All Years"}</p>
-    <p><strong>Total Inventory Value:</strong> ₹${filteredTotal}</p>
-    
-    <table border="1" cellspacing="0" cellpadding="8" width="100%" style="border-collapse: collapse; margin-top: 20px; font-size: 12px;">
-      <thead style="background: #f0f0f0;">
-        <tr>
-          <th>Date</th>
-          <th>Item Name</th>
-          <th>Qty</th>
-          <th>Unit Price</th>
-          <th>Subtotal</th>
-          <th>Entry Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${filteredInventory
-          .map((entry) => {
-            const rows = entry.items
-              .map(
-                (item, index) => `
-            <tr>
-              ${index === 0 ? `<td rowspan="${entry.items.length}">${new Date(entry.createdAt).toLocaleDateString()}</td>` : ""}
-              <td>${item.name}</td>
-              <td>${item.quantity}</td>
-              <td>₹${item.unitPrice}</td>
-              <td>₹${(item.quantity * item.unitPrice).toFixed(2)}</td>
-              ${index === 0 ? `<td rowspan="${entry.items.length}" style="font-weight:bold; color: black;">₹${entry.total.toFixed(2)}</td>` : ""}
-            </tr>
-          `,
-              )
-              .join("");
-            return rows;
-          })
-          .join("")}
-      </tbody>
-    </table>
-  </div>
-`;
-
-    html2pdf()
-      .set({
-        margin: 0.5,
-        filename: `Inventory_Report_${selectedMonth || "All_Months"}_${selectedYear || "All_Years"}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-      })
-      .from(content)
-      .save();
-  };
+  const entryCount = inventoryData.length;
 
   const downloadInventoryExcel = () => {
-    const rows = filteredInventory.flatMap((entry) =>
+    const rows = inventoryData.flatMap((entry) =>
       entry.items.map((item, index) => ({
         Date:
           index === 0
@@ -184,13 +136,77 @@ const Inventory = () => {
   };
 
   return (
-    <div>
-      <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-        <div className="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Inventory Management
-          </h2>
+    <ReportPage>
+      <ReportToolbar title="Inventory" periodLabel={periodLabel}>
+        <select
+          className="border p-2 rounded text-sm"
+          value={selectedMonth || ""}
+          onChange={(e) =>
+            setSelectedMonth(e.target.value ? Number(e.target.value) : null)
+          }
+        >
+          <option value="">All Months</option>
+          {MONTHS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
 
+        <select
+          className="border p-2 rounded text-sm"
+          value={selectedYear || ""}
+          onChange={(e) =>
+            setSelectedYear(e.target.value ? Number(e.target.value) : null)
+          }
+        >
+          <option value="">All Years</option>
+          {YEARS.map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+
+        <button onClick={downloadInventoryExcel} className={EXCEL_BTN}>
+          Download Excel
+        </button>
+
+        <PDFDownloadLink
+          document={<InventoryReportPdf inventory={inventoryData} />}
+          fileName={`Inventory_Report_${selectedMonth || "All_Month"}_${selectedYear || "All_Year"}.pdf`}
+        >
+          {({ loading: pdfLoading }) => (
+            <button className={PDF_BTN}>
+              {pdfLoading ? "Preparing PDF..." : "Download PDF"}
+            </button>
+          )}
+        </PDFDownloadLink>
+      </ReportToolbar>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Tile
+          emoji="📦"
+          label="Inventory Value"
+          value={filteredTotal}
+          tone="rose"
+          hint="Total cost in this period"
+        />
+        <Tile
+          emoji="🧮"
+          label="Entries"
+          value={String(entryCount)}
+          isCurrency={false}
+          tone="gray"
+        />
+      </div>
+
+      <Card>
+        <h2 className="text-lg font-bold text-gray-800 mb-4">
+          Add Inventory Purchase
+        </h2>
+
+        <div className="overflow-x-auto">
           <table className="w-full text-left mb-4">
             <thead>
               <tr className="bg-gray-200">
@@ -245,133 +261,85 @@ const Inventory = () => {
                     />
                   </td>
                   <td className="p-2">
-                    ₹{(item.quantity * item.unitPrice).toFixed(2)}
+                    ₹{formatINR(item.quantity * item.unitPrice)}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-
-          <button
-            onClick={addItem}
-            className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
-          >
-            + Add Item
-          </button>
-
-          <div className="text-right text-lg font-bold mb-6">
-            Inventory Value: ₹{total.toFixed(2)}
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button
-              onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-            >
-              Save
-            </button>
-          </div>
         </div>
-      </div>
 
-      <div className="flex items-center justify-between p-2">
-        <div className="flex flex-wrap gap-4 ">
-          <select
-            className="border p-2 rounded"
-            value={selectedMonth || ""}
-            onChange={(e) =>
-              setSelectedMonth(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">All Months</option>
-            {Array.from({ length: 12 }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {new Date(0, i).toLocaleString("default", { month: "long" })}
-              </option>
+        <button
+          onClick={addItem}
+          className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded text-sm"
+        >
+          + Add Item
+        </button>
+
+        <div className="text-right text-lg font-bold mb-6">
+          Inventory Value: ₹{formatINR(total)}
+        </div>
+
+        <div className="flex justify-end">
+          <button onClick={handleSubmit} className={PRIMARY_BTN}>
+            Save
+          </button>
+        </div>
+      </Card>
+
+      {loading && <Loading />}
+
+      {!loading && error && <ErrorState message={error} />}
+
+      {!loading && !error && inventoryData.length === 0 && (
+        <EmptyState label="No inventory records for this period." />
+      )}
+
+      {!loading && !error && inventoryData.length > 0 && (
+        <Card>
+          <TallyLine
+            text={`Sum of ${entryCount} entr${entryCount === 1 ? "y" : "ies"} = ₹${formatINR(filteredTotal)}`}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+            {inventoryData.map((order) => (
+              <div
+                key={order._id}
+                className="bg-white border border-gray-200 rounded-xl shadow-sm p-4"
+              >
+                <h2 className="text-lg font-semibold text-indigo-600">
+                  Purchase Details
+                </h2>
+                <p className="text-sm text-gray-600 mb-2">
+                  Date: {new Date(order.createdAt).toLocaleDateString("en-IN")}
+                </p>
+                <h3 className="font-semibold text-gray-800 mb-1">Items:</h3>
+                <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
+                  {order.items.map((item) => (
+                    <li key={item._id} className="mb-2">
+                      <div>
+                        {item.name} - {item.quantity} pcs × ₹{item.unitPrice}
+                      </div>
+
+                      <div className="text-xs text-gray-500">
+                        Date:{" "}
+                        {item?.date
+                          ? new Date(item.date).toLocaleDateString("en-IN")
+                          : new Date(order.createdAt).toLocaleDateString(
+                              "en-IN",
+                            )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <div className="text-right font-bold text-green-700">
+                  Total: ₹{formatINR(order.total)}
+                </div>
+              </div>
             ))}
-          </select>
-
-          <select
-            className="border p-2 rounded"
-            value={selectedYear || ""}
-            onChange={(e) =>
-              setSelectedYear(e.target.value ? Number(e.target.value) : null)
-            }
-          >
-            <option value="">All Years</option>
-            {Array.from({ length: 5 }, (_, i) => {
-              const year = new Date().getFullYear() - i;
-              return (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              );
-            })}
-          </select>
-
-          <div className="flex items-center gap-3">
-          <button
-            onClick={downloadInventoryExcel}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-          >
-            Download Excel
-          </button>
-
-          <PDFDownloadLink
-            document={<InventoryReportPdf inventory={filteredInventory} />}
-            fileName={`Inventory_Report_${selectedMonth || "All_Month"}_${selectedYear || "All_Year"}.pdf`}
-          >
-            {({ loading }) => (
-              <button className="bg-green-600 text-white px-4 py-2 rounded-lg">
-                {loading ? "Preparing PDF..." : "Download PDF"}
-              </button>
-            )}
-          </PDFDownloadLink>
-        </div>
-        </div>
-
-        
-
-        <div className="text-right px-6 text-green-700 font-bold text-lg">
-          Filtered Inventory Value: ₹{filteredTotal.toFixed(2)}
-        </div>
-      </div>
-      <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredInventory.map((order) => (
-          <div
-            key={order._id}
-            className="bg-white border border-gray-200 rounded-xl shadow p-4"
-          >
-            <h2 className="text-lg font-semibold text-indigo-600">
-              Purchase Details
-            </h2>
-            <p className="text-sm text-gray-600 mb-2">
-              Date: {new Date(order.createdAt).toLocaleDateString("en-IN")}
-            </p>
-            <h3 className="font-semibold text-gray-800 mb-1">Items:</h3>
-            <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
-              {order.items.map((item) => (
-                <li key={item._id} className="mb-2">
-                  <div>
-                    {item.name} - {item.quantity} pcs × ₹{item.unitPrice}
-                  </div>
-
-                  <div className="text-xs text-gray-500">
-                    Date:{" "}
-                    {item?.date
-                      ? new Date(item.date).toLocaleDateString("en-IN")
-                      : new Date(order.createdAt).toLocaleDateString("en-IN")}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="text-right font-bold text-green-700">
-              Total: ₹{order.total}
-            </div>
           </div>
-        ))}
-      </div>
-    </div>
+        </Card>
+      )}
+    </ReportPage>
   );
 };
 

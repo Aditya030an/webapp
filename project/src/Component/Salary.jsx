@@ -1,14 +1,37 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import html2pdf from "html2pdf.js";
+import { useState, useEffect, useCallback } from "react";
 import SalaryReportPdf from "./pdf/SalaryReportPdf";
 import { MdEdit, MdClose } from "react-icons/md";
 import { exportToExcel } from "../utils/exportToExcel";
+import { fetchReport, MONTHS, YEARS, formatINR } from "../utils/reportFetch";
+import {
+  ReportPage,
+  Card,
+  ReportToolbar,
+  Tile,
+  TallyLine,
+  Loading,
+  ErrorState,
+  EmptyState,
+  EXCEL_BTN,
+  PRIMARY_BTN,
+} from "./reports/ReportUI";
+
+// "YYYY-MM" of the current month — used as the default pay month for a new row.
+const currentPayMonth = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+};
+
+const blankEmployee = () => ({
+  name: "",
+  role: "",
+  month: currentPayMonth(),
+  salary: 0,
+  paid: false,
+});
 
 const Salary = () => {
-  const [employees, setEmployees] = useState([
-    { name: "", role: "", month: "", salary: 0, paid: false },
-  ]);
+  const [employees, setEmployees] = useState([blankEmployee()]);
 
   const [selectedMonth, setSelectedMonth] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
@@ -25,28 +48,23 @@ const Salary = () => {
   };
 
   const addEmployee = () => {
-    setEmployees([
-      ...employees,
-      { name: "", role: "", month: "", salary: 0, paid: false },
-    ]);
+    setEmployees([...employees, blankEmployee()]);
   };
 
-  const totalSalary = employees.reduce((sum, emp) => sum + emp.salary, 0);
+  const totalSalary = employees.reduce(
+    (sum, emp) => sum + (Number(emp.salary) || 0),
+    0,
+  );
 
   const [salaryData, setSalaryData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   const [editId, setEditId] = useState(null);
   const [updateStatus, setUpdateStatus] = useState(null);
 
   const [allEmployeeData, setAllEmployeeData] = useState([]);
-
-  const formatMonthValue = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return "";
-    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-  };
 
   const filteredEmployeeOptions = (searchValue) => {
     return allEmployeeData.filter((emp) =>
@@ -63,27 +81,31 @@ const Salary = () => {
       ...updated[index],
       name: employee?.personalDetails?.fullName || "",
       role: employee?.personalDetails?.qualification || "",
-     month: formatMonthValue(employee?.personalDetails?.joiningDate),
     };
 
     setEmployees(updated);
     setActiveDropdown(null);
   };
 
-  const fetchSalaryData = async () => {
+  // Server-side filtered: each entry already contains only the matching
+  // employees with a recomputed totalSalary, so we render/total it directly.
+  const fetchSalaryData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/salary`,
-      );
-      const result = await response.json();
-      console.log("salary data:", result);
-      if (result.success === true) {
-        setSalaryData(result.data);
-      }
-    } catch (error) {
-      console.error("Error fetching salary data:", error);
+      const data = await fetchReport("salary", {
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      setSalaryData(data);
+    } catch (err) {
+      console.error("Error fetching salary data:", err);
+      setError("Failed to load salary data. Please try again.");
+      setSalaryData([]);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [selectedMonth, selectedYear]);
 
   const fetchAllEmployees = async () => {
     try {
@@ -92,7 +114,6 @@ const Salary = () => {
       );
 
       const result = await response.json();
-      console.log("Employee data:", result);
 
       if (result.success && result.employees.length > 0) {
         setAllEmployeeData(result?.employees);
@@ -104,11 +125,14 @@ const Salary = () => {
 
   useEffect(() => {
     fetchSalaryData();
+  }, [fetchSalaryData]);
+
+  useEffect(() => {
     fetchAllEmployees();
   }, []);
 
   const handleSubmit = async () => {
-    const salaryData = {
+    const payload = {
       employees,
       totalSalary,
     };
@@ -121,15 +145,14 @@ const Salary = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(salaryData),
+          body: JSON.stringify(payload),
         },
       );
 
       const result = await response.json();
-      // console.log("salary", result);
       fetchSalaryData();
       alert(result.message || "Salary report saved successfully!");
-      setEmployees([{ name: "", role: "", month: "", salary: 0, paid: false }]);
+      setEmployees([blankEmployee()]);
     } catch (error) {
       console.error(error);
       alert("Error saving salary report. Please try again later.");
@@ -137,9 +160,6 @@ const Salary = () => {
   };
 
   const updatePaidStatus = async (entryId, empId, paid) => {
-    console.log("ntryIde", entryId);
-    console.log("empId", empId);
-    console.log("paid", paid);
     try {
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/report/salary/${entryId}/${empId}`,
@@ -166,36 +186,39 @@ const Salary = () => {
     }
   };
 
-  const filteredEntries = salaryData.filter((entry) => {
-    return entry.employees.some((emp) => {
-      const [yr, mo] = emp.month.split("-");
-      const matchMonth = selectedMonth
-        ? Number(mo) === Number(selectedMonth)
-        : true;
-      const matchYear = selectedYear
-        ? Number(yr) === Number(selectedYear)
-        : true;
-      return matchMonth && matchYear;
-    });
-  });
-
-  const totalFiltered = filteredEntries.reduce(
-    (sum, entry) => sum + entry.totalSalary,
+  const totalFiltered = salaryData.reduce(
+    (sum, entry) => sum + (Number(entry.totalSalary) || 0),
     0,
   );
 
-  const paidTotal = filteredEntries.reduce(
+  const paidTotal = salaryData.reduce(
     (sum, entry) =>
       sum +
-      entry.employees.filter((e) => e.paid).reduce((s, e) => s + e.salary, 0),
+      entry.employees
+        .filter((e) => e.paid)
+        .reduce((s, e) => s + (Number(e.salary) || 0), 0),
     0,
   );
-  const unpaidTotal = filteredEntries.reduce(
+  const unpaidTotal = salaryData.reduce(
     (sum, entry) =>
       sum +
-      entry.employees.filter((e) => !e.paid).reduce((s, e) => s + e.salary, 0),
+      entry.employees
+        .filter((e) => !e.paid)
+        .reduce((s, e) => s + (Number(e.salary) || 0), 0),
     0,
   );
+
+  const monthName = MONTHS.find(
+    (m) => String(m.value) === String(selectedMonth),
+  )?.label;
+  const periodLabel =
+    selectedMonth && selectedYear
+      ? `${monthName} ${selectedYear}`
+      : !selectedMonth && selectedYear
+        ? `Year ${selectedYear}`
+        : selectedMonth && !selectedYear
+          ? `${monthName} (all years)`
+          : "All time";
 
   useEffect(() => {
     const handleClickOutside = () => {
@@ -207,7 +230,7 @@ const Salary = () => {
   }, []);
 
   const downloadSalaryExcel = () => {
-    const rows = filteredEntries.flatMap((entry) =>
+    const rows = salaryData.flatMap((entry) =>
       entry.employees.map((emp, index) => ({
         Date:
           index === 0
@@ -230,14 +253,64 @@ const Salary = () => {
   };
 
   return (
-    <div>
-      <div className=" bg-gray-100 px-4 md:px-6 py-6">
-        {/* Salary Form */}
-        <div className="max-w-5xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Salary Management
-          </h2>
+    <ReportPage>
+      <ReportToolbar title="Salary" periodLabel={periodLabel}>
+        <select
+          className="border p-2 rounded text-sm"
+          value={selectedMonth}
+          onChange={(e) => setSelectedMonth(e.target.value)}
+        >
+          <option value="">All Months</option>
+          {MONTHS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+        <select
+          className="border p-2 rounded text-sm"
+          value={selectedYear}
+          onChange={(e) => setSelectedYear(e.target.value)}
+        >
+          <option value="">All Years</option>
+          {YEARS.map((y) => (
+            <option key={y} value={y}>
+              {y}
+            </option>
+          ))}
+        </select>
+        <button onClick={downloadSalaryExcel} className={EXCEL_BTN}>
+          Download Excel
+        </button>
+        <SalaryReportPdf
+          filteredEntries={salaryData}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
+          totalFiltered={totalFiltered}
+          paidTotal={paidTotal}
+          unpaidTotal={unpaidTotal}
+        />
+      </ReportToolbar>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Tile emoji="👥" label="Total Salary" value={totalFiltered} tone="gray" />
+        <Tile emoji="✅" label="Paid" value={paidTotal} tone="emerald" />
+        <Tile emoji="⏳" label="Unpaid" value={unpaidTotal} tone="rose" />
+      </div>
+
+      <TallyLine
+        text={`Paid ₹${formatINR(paidTotal)} + Unpaid ₹${formatINR(
+          unpaidTotal,
+        )} = Total ₹${formatINR(totalFiltered)}`}
+      />
+
+      {/* Salary Form */}
+      <Card>
+        <h2 className="text-xl font-bold text-gray-800 mb-6">
+          Add Salary Sheet
+        </h2>
+
+        <div className="overflow-x-auto">
           <table className="w-full text-left mb-4">
             <thead>
               <tr className="bg-gray-200">
@@ -346,90 +419,35 @@ const Salary = () => {
               ))}
             </tbody>
           </table>
+        </div>
 
-          <button
-            onClick={addEmployee}
-            className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
-          >
-            + Add Employee
+        <button
+          onClick={addEmployee}
+          className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
+        >
+          + Add Employee
+        </button>
+
+        <div className="text-right text-lg font-bold mt-2 mb-6">
+          Total Salary: ₹{formatINR(totalSalary)}
+        </div>
+
+        <div className="flex justify-end space-x-4">
+          <button onClick={handleSubmit} className={PRIMARY_BTN}>
+            Save
           </button>
-
-          <div className="text-right text-lg font-bold mt-2 mb-6">
-            Total Salary: ₹{totalSalary.toFixed(2)}
-          </div>
-
-          <div className="flex justify-end space-x-4">
-            <button
-              onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-            >
-              Save
-            </button>
-            <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-              Print
-            </button>
-          </div>
         </div>
-        <div className="px-6 py-4">
-          <div className="flex gap-4 mb-4">
-            <select
-              className="border p-2 rounded"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            >
-              <option value="">All Months</option>
-              {[...Array(12)].map((_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {new Date(0, i).toLocaleString("default", { month: "long" })}
-                </option>
-              ))}
-            </select>
-            <select
-              className="border p-2 rounded"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              <option value="">All Years</option>
-              {[...Array(5)].map((_, i) => {
-                const y = new Date().getFullYear() - i;
-                return (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                );
-              })}
-            </select>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={downloadSalaryExcel}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-              >
-                Download Excel
-              </button>
+      </Card>
 
-              <SalaryReportPdf
-                filteredEntries={filteredEntries}
-                selectedMonth={selectedMonth}
-                selectedYear={selectedYear}
-                totalFiltered={totalFiltered}
-                paidTotal={paidTotal}
-                unpaidTotal={unpaidTotal}
-              />
-            </div>
-          </div>
-          <div className="text-right font-bold text-blue-700 mb-2">
-            Monthly Total: ₹{totalFiltered} | Paid: ₹{paidTotal} | Unpaid: ₹
-            {unpaidTotal}
-          </div>
-        </div>
-      </div>
-      <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredEntries.length === 0 ? (
-          <div className="col-span-full text-center text-gray-500 text-lg font-medium">
-            No Salary in this month and year.
-          </div>
-        ) : (
-          filteredEntries.map((entry) => (
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <ErrorState message={error} />
+      ) : salaryData.length === 0 ? (
+        <EmptyState label="No salary records for this period." />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {salaryData.map((entry) => (
             <div
               key={entry._id}
               className="bg-white border border-gray-200 rounded-xl shadow p-4"
@@ -471,23 +489,9 @@ const Salary = () => {
                       <span className="font-medium">Month:</span> {emp.month}
                     </p>
                     <p>
-                      <span className="font-medium">Salary:</span> ₹{emp.salary}
+                      <span className="font-medium">Salary:</span> ₹
+                      {formatINR(emp.salary)}
                     </p>
-                    {/* <p>
-                      <span className="font-medium">Paid:</span>{" "}
-                      <button
-                        onClick={() =>
-                          updatePaidStatus(entry._id, emp._id, !emp.paid)
-                        }
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          emp.paid
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {emp.paid ? "Paid" : "Unpaid"}
-                      </button>
-                    </p> */}
                     {editId === emp._id ? (
                       <div className="text-sm">
                         Paid:
@@ -531,13 +535,13 @@ const Salary = () => {
                 ))}
               </div>
               <div className="text-right text-indigo-700 font-bold">
-                Total Salary: ₹{entry.totalSalary}
+                Total Salary: ₹{formatINR(entry.totalSalary)}
               </div>
             </div>
-          ))
-        )}
-      </div>
-    </div>
+          ))}
+        </div>
+      )}
+    </ReportPage>
   );
 };
 

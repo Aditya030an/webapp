@@ -1,11 +1,21 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import html2pdf from "html2pdf.js";
+import { useState, useEffect } from "react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import ExpenseReportPdf from "../Component/pdf/ExpenseReportPdf.jsx";
 import { exportToExcel } from "../utils/exportToExcel";
+import { fetchReport, MONTHS, YEARS, formatINR } from "../utils/reportFetch";
+import {
+  ReportPage,
+  Card,
+  ReportToolbar,
+  Tile,
+  TallyLine,
+  Loading,
+  ErrorState,
+  EmptyState,
+  EXCEL_BTN,
+  PDF_BTN,
+  PRIMARY_BTN,
+} from "./reports/ReportUI";
 
 const Expenses = () => {
   const [date, setDate] = useState("");
@@ -15,7 +25,9 @@ const Expenses = () => {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
 
-  const [filteredExpenses, setFilteredExpenses] = useState([]);
+  const [expensesData, setExpensesData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleExpenseChange = (index, field, value) => {
     const updated = [...expenses];
@@ -29,53 +41,50 @@ const Expenses = () => {
 
   const total = expenses.reduce((sum, e) => sum + e.amount, 0);
 
-  const [expensesData, setExpensesData] = useState([]);
-
   const fetchExpensesData = async () => {
+    setLoading(true);
+    setError("");
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/report/expenses`,
-      );
-      const result = await response.json();
-      // console.log("Expenses data:", result);
-      if (result.success === true) {
-        setExpensesData(result.data);
-      }
-    } catch (error) {
-      console.error("Error fetching bill data:", error);
+      const data = await fetchReport("expenses", {
+        month: selectedMonth,
+        year: selectedYear,
+      });
+      setExpensesData(data);
+    } catch (err) {
+      console.error("Error fetching expenses data:", err);
+      setError("Failed to load expenses. Please try again.");
+      setExpensesData([]);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchExpensesData();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedMonth, selectedYear]);
 
-  // console.log("Expenses data:", expensesData);
+  const filteredTotal = expensesData.reduce(
+    (sum, e) => sum + (e.total || 0),
+    0,
+  );
 
-  const filterExpensesByMonthYear = () => {
-    let filtered = expensesData;
+  const entriesCount = expensesData?.length || 0;
 
-    if (selectedMonth || selectedYear) {
-      filtered = expensesData.filter((exp) => {
-        const expDate = new Date(exp.date);
-        const matchesMonth = selectedMonth
-          ? expDate.getMonth() + 1 === Number(selectedMonth)
-          : true;
-        const matchesYear = selectedYear
-          ? expDate.getFullYear() === Number(selectedYear)
-          : true;
-        return matchesMonth && matchesYear;
-      });
-    }
+  const selectedMonthLabel = selectedMonth
+    ? MONTHS.find((m) => m.value === selectedMonth)?.label || "All Months"
+    : "All Months";
 
-    setFilteredExpenses(filtered);
-  };
+  const monthName = selectedMonth
+    ? MONTHS.find((m) => m.value === selectedMonth)?.label
+    : null;
 
-  useEffect(() => {
-    filterExpensesByMonthYear();
-  }, [expensesData, selectedMonth, selectedYear]);
-
-  const filteredTotal = filteredExpenses.reduce((sum, e) => sum + e.total, 0);
+  const periodLabel = (() => {
+    if (monthName && selectedYear) return `${monthName} ${selectedYear}`;
+    if (!monthName && selectedYear) return `Year ${selectedYear}`;
+    if (monthName && !selectedYear) return `${monthName} (all years)`;
+    return "All time";
+  })();
 
   const handleSubmit = async () => {
     const formData = {
@@ -115,93 +124,8 @@ const Expenses = () => {
     }
   };
 
-  const generatePDF = () => {
-    if (!filteredExpenses.length) return alert("No data to generate PDF");
-
-    const content = `
-  <div style="font-family: Arial, sans-serif; padding: 20px;">
-    <h2 style="text-align:center;">Monthly Expense Report</h2>
-    <p><strong>Month:</strong> ${
-      selectedMonth
-        ? new Date(0, selectedMonth - 1).toLocaleString("default", {
-            month: "long",
-          })
-        : "All Months"
-    }</p>
-    <p><strong>Year:</strong> ${selectedYear || "All Years"}</p>
-    <p><strong>Total Expense:</strong> ₹${filteredTotal}</p>
-
-    <table border="1" cellspacing="0" cellpadding="8" width="100%" style="border-collapse: collapse; margin-top: 20px; font-size: 12px;">
-      <thead style="background-color: #f2f2f2;">
-        <tr>
-          <th width="10%">Date</th>
-          <th width="15%">Category</th>
-          <th width="30%">Description</th>
-          <th width="10%">Amount</th>
-          <th width="25%">Notes</th>
-          <th width="10%">Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${filteredExpenses
-          .map((expense) => {
-            const itemRows = expense.expenses
-              .map(
-                (item, index) => `
-            <tr>
-              ${
-                index === 0
-                  ? `<td rowspan="${expense.expenses.length}">${new Date(
-                      expense.date,
-                    ).toLocaleDateString()}</td>`
-                  : ""
-              }
-              ${
-                index === 0
-                  ? `<td rowspan="${expense.expenses.length}">${expense.category}</td>`
-                  : ""
-              }
-              <td>${item.description}</td>
-              <td>₹${item.amount}</td>
-              ${
-                index === 0
-                  ? `<td rowspan="${expense.expenses.length}">${
-                      expense.notes || "-"
-                    }</td>`
-                  : ""
-              }
-              ${
-                index === 0
-                  ? `<td rowspan="${expense.expenses.length}">₹${expense.total}</td>`
-                  : ""
-              }
-            </tr>
-          `,
-              )
-              .join("");
-            return itemRows;
-          })
-          .join("")}
-      </tbody>
-    </table>
-  </div>
-  `;
-
-    const opt = {
-      margin: 0.5,
-      filename: `Expense_Report_${selectedMonth || "All Months"}_${
-        selectedYear || "All Years"
-      }.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2 },
-      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-    };
-
-    html2pdf().set(opt).from(content).save();
-  };
-
   const downloadExpensesExcel = () => {
-    const rows = filteredExpenses.flatMap((expense) =>
+    const rows = expensesData.flatMap((expense) =>
       expense.expenses.map((item, index) => ({
         Date:
           index === 0 ? new Date(expense.date).toLocaleDateString("en-IN") : "",
@@ -221,227 +145,231 @@ const Expenses = () => {
   };
 
   return (
-    <div>
-      <div className="min-h-screen bg-gray-100 px-4 md:px-6 py-6">
-        {/* Main Form */}
-        <div className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6">
-            Record Expenses
-          </h2>
-
-          {/* Expense Info */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="text-gray-500 block mb-1">Date</label>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-            <div>
-              <label className="text-gray-500 block mb-1">Category</label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Utilities, Supplies"
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-gray-500 block mb-1">Notes</label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Additional info..."
-                className="w-full border border-gray-300 p-2 rounded"
-              />
-            </div>
-          </div>
-
-          {/* Expense Items */}
-          <table className="w-full text-left mb-4">
-            <thead>
-              <tr className="bg-gray-200">
-                <th className="p-2">Description</th>
-                <th className="p-2">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              {expenses.map((expense, idx) => (
-                <tr key={idx} className="border-b">
-                  <td className="p-2">
-                    <input
-                      type="text"
-                      value={expense.description}
-                      onChange={(e) =>
-                        handleExpenseChange(idx, "description", e.target.value)
-                      }
-                      placeholder="Expense detail"
-                      className="w-full border border-gray-300 p-1 rounded"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      min="0"
-                      value={expense.amount}
-                      onChange={(e) =>
-                        handleExpenseChange(idx, "amount", e.target.value)
-                      }
-                      className="w-full border border-gray-300 p-1 rounded"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <button
-            onClick={addExpense}
-            className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
-          >
-            + Add Expense
-          </button>
-
-          {/* Total */}
-          <div className="text-right text-lg font-bold mt-2 mb-6">
-            Total: ₹ {total.toFixed(2)}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-4">
-            <button
-              onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-            >
-              Save
-            </button>
-            <button className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg">
-              Print
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Select Month
-            </label>
-            <select
-              className="w-full border border-gray-300 p-2 rounded"
-              value={selectedMonth || ""}
-              onChange={(e) =>
-                setSelectedMonth(e.target.value ? Number(e.target.value) : null)
-              }
-            >
-              <option value="">All Months</option>
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {new Date(0, i).toLocaleString("default", { month: "long" })}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-600">
-              Select Year
-            </label>
-            <select
-              className="w-full border border-gray-300 p-2 rounded"
-              value={selectedYear || ""}
-              onChange={(e) =>
-                setSelectedYear(e.target.value ? Number(e.target.value) : null)
-              }
-            >
-              <option value="">All Years</option>
-              {Array.from({ length: 5 }, (_, i) => {
-                const year = new Date().getFullYear() - i;
-                return (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={downloadExpensesExcel}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg"
-          >
-            Download Excel
-          </button>
-
-          <PDFDownloadLink
-            document={
-              <ExpenseReportPdf
-                expenses={filteredExpenses}
-                month={selectedMonth || "All Months"}
-                year={selectedYear || "All Years"}
-                total={filteredTotal}
-              />
+    <ReportPage>
+      {/* Toolbar: period filters + exports */}
+      <ReportToolbar title="Expenses" periodLabel={periodLabel}>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">
+            Month
+          </label>
+          <select
+            className="border border-gray-300 p-2 rounded-lg text-sm"
+            value={selectedMonth || ""}
+            onChange={(e) =>
+              setSelectedMonth(e.target.value ? Number(e.target.value) : null)
             }
-            fileName={`Expense_Report_${selectedMonth || "All_Months"}_${selectedYear || "All_Years"}.pdf`}
           >
-            {({ loading }) => (
-              <button className="bg-green-600 text-white px-4 py-2 rounded-lg">
-                {loading ? "Preparing PDF..." : "Download PDF"}
-              </button>
-            )}
-          </PDFDownloadLink>
+            <option value="">All Months</option>
+            {MONTHS.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 mb-1">
+            Year
+          </label>
+          <select
+            className="border border-gray-300 p-2 rounded-lg text-sm"
+            value={selectedYear || ""}
+            onChange={(e) =>
+              setSelectedYear(e.target.value ? Number(e.target.value) : null)
+            }
+          >
+            <option value="">All Years</option>
+            {YEARS.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <div className="text-lg font-bold text-green-700 px-4">
-            Monthly Total: ₹{filteredTotal}
+        <button onClick={downloadExpensesExcel} className={EXCEL_BTN}>
+          Download Excel
+        </button>
+
+        <PDFDownloadLink
+          document={
+            <ExpenseReportPdf
+              expenses={expensesData}
+              month={selectedMonthLabel}
+              year={selectedYear || "All Years"}
+              total={formatINR(filteredTotal)}
+            />
+          }
+          fileName={`Expense_Report_${selectedMonth || "All_Months"}_${selectedYear || "All_Years"}.pdf`}
+        >
+          {({ loading: pdfLoading }) => (
+            <button className={PDF_BTN} disabled={pdfLoading}>
+              {pdfLoading ? "Preparing PDF..." : "Download PDF"}
+            </button>
+          )}
+        </PDFDownloadLink>
+      </ReportToolbar>
+
+      {/* Summary tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Tile
+          emoji="🧾"
+          label="Total Expenses"
+          value={filteredTotal}
+          tone="rose"
+          hint="Money spent in this period"
+        />
+        <Tile
+          emoji="🧮"
+          label="Entries"
+          value={String(entriesCount)}
+          isCurrency={false}
+          tone="gray"
+        />
+      </div>
+
+      <TallyLine
+        text={`Sum of ${entriesCount} expense entr${entriesCount === 1 ? "y" : "ies"} = ₹${formatINR(filteredTotal)}`}
+      />
+
+      {/* Create expense form */}
+      <Card>
+        <h2 className="text-xl font-bold text-gray-800 mb-6">Record Expenses</h2>
+
+        {/* Expense Info */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="text-gray-500 block mb-1">Date</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div>
+            <label className="text-gray-500 block mb-1">Category</label>
+            <input
+              type="text"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              placeholder="e.g. Utilities, Supplies"
+              className="w-full border border-gray-300 p-2 rounded"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-gray-500 block mb-1">Notes</label>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Additional info..."
+              className="w-full border border-gray-300 p-2 rounded"
+            />
           </div>
         </div>
-      </div>
 
-      <div className="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredExpenses?.length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl shadow p-4">
-            <p className="text-gray-600">No expenses found.</p>
-          </div>
-        ) : (
-          filteredExpenses?.map((expense) => (
-            <div
-              key={expense._id}
-              className="bg-white border border-gray-200 rounded-xl shadow p-4"
-            >
-              <h2 className="text-lg font-semibold text-indigo-600">
-                Category: {expense.category}
-              </h2>
-              <p className="text-sm text-gray-600 mb-1">
-                Date: {new Date(expense.date).toLocaleDateString("en-IN")}
-              </p>
-              <p className="text-sm text-gray-700 mb-2">
-                <strong>Notes:</strong>{" "}
-                <span className="block text-gray-600">{expense.notes}</span>
-              </p>
+        {/* Expense Items */}
+        <table className="w-full text-left mb-4">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="p-2">Description</th>
+              <th className="p-2">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {expenses.map((expense, idx) => (
+              <tr key={idx} className="border-b">
+                <td className="p-2">
+                  <input
+                    type="text"
+                    value={expense.description}
+                    onChange={(e) =>
+                      handleExpenseChange(idx, "description", e.target.value)
+                    }
+                    placeholder="Expense detail"
+                    className="w-full border border-gray-300 p-1 rounded"
+                  />
+                </td>
+                <td className="p-2">
+                  <input
+                    type="number"
+                    min="0"
+                    value={expense.amount}
+                    onChange={(e) =>
+                      handleExpenseChange(idx, "amount", e.target.value)
+                    }
+                    className="w-full border border-gray-300 p-1 rounded"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-              <h3 className="font-semibold text-gray-800 mb-1">Expenses:</h3>
-              <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
-                {expense.expenses.map((item) => (
-                  <li key={item._id}>
-                    {item.description} - ₹{item.amount}
-                  </li>
-                ))}
-              </ul>
+        <button
+          onClick={addExpense}
+          className="mb-4 bg-blue-100 text-blue-700 px-3 py-1 rounded"
+        >
+          + Add Expense
+        </button>
 
-              <div className="text-right font-bold text-green-700">
-                Total: ₹{expense.total}
+        {/* Total */}
+        <div className="text-right text-lg font-bold mt-2 mb-6">
+          Total: ₹ {formatINR(total)}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex justify-end space-x-4">
+          <button onClick={handleSubmit} className={PRIMARY_BTN}>
+            Save
+          </button>
+        </div>
+      </Card>
+
+      {/* Expense list */}
+      {loading ? (
+        <Loading />
+      ) : error ? (
+        <ErrorState message={error} />
+      ) : entriesCount === 0 ? (
+        <EmptyState label="No expenses found for this period." />
+      ) : (
+        <Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {expensesData?.map((expense) => (
+              <div
+                key={expense._id}
+                className="bg-white border border-gray-200 rounded-xl shadow-sm p-4"
+              >
+                <h2 className="text-lg font-semibold text-indigo-600">
+                  Category: {expense.category}
+                </h2>
+                <p className="text-sm text-gray-600 mb-1">
+                  Date: {new Date(expense.date).toLocaleDateString("en-IN")}
+                </p>
+                <p className="text-sm text-gray-700 mb-2">
+                  <strong>Notes:</strong>{" "}
+                  <span className="block text-gray-600">{expense.notes}</span>
+                </p>
+
+                <h3 className="font-semibold text-gray-800 mb-1">Expenses:</h3>
+                <ul className="list-disc pl-5 text-sm text-gray-700 mb-2">
+                  {expense.expenses.map((item) => (
+                    <li key={item._id}>
+                      {item.description} - ₹{formatINR(item.amount)}
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="text-right font-bold text-rose-600">
+                  Total: ₹{formatINR(expense.total)}
+                </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </ReportPage>
   );
 };
 

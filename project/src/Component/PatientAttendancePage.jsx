@@ -1,140 +1,259 @@
-import React, { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { MONTHS, YEARS } from "../utils/reportFetch";
+import {
+  ReportPage,
+  Card,
+  ReportToolbar,
+  Tile,
+  Loading,
+  ErrorState,
+  EmptyState,
+} from "./reports/ReportUI";
+
+// Format any date-like value to a YYYY-MM-DD string using UTC components,
+// so attendance dates and the selected date are compared on the same basis
+// (no off-by-one from local timezone shifts).
+const toUTCDateStr = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const isPresent = (att) =>
+  String(att?.status || "").toLowerCase() === "present";
 
 const PatientAttendancePage = () => {
   const backendURL = import.meta.env.VITE_BACKEND_URL;
-  const [filterType, setFilterType] = useState("today"); // today | month | year
-  const [selectedDate, setSelectedDate] = useState("");
-  const [enquiries, setEnquiries] = useState([]);
 
-  const fetchAllEnquiries = async () => {
-    try {
-      const response = await fetch(
-        `${backendURL}/api/enquiry/getPatientAttendanceEnquiry`,
-      );
-      const result = await response.json();
-      setEnquiries(result?.enquiries || []);
-    } catch (error) {
-      console.error("Error fetching enquiries:", error);
-    }
-  };
+  const now = new Date();
+  // filterType: today | thisMonth | thisYear | date | period
+  const [filterType, setFilterType] = useState("today");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(now.getUTCMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getUTCFullYear());
+
+  const [enquiries, setEnquiries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
+    let active = true;
+
+    const fetchAllEnquiries = async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(
+          `${backendURL}/api/enquiry/getPatientAttendanceEnquiry`,
+        );
+        if (!response.ok) {
+          throw new Error(`Request failed (${response.status})`);
+        }
+        const result = await response.json();
+        if (active) setEnquiries(result?.enquiries || []);
+      } catch (err) {
+        if (active) {
+          setError(err.message || "Failed to load attendance data");
+          setEnquiries([]);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+
     fetchAllEnquiries();
-  }, []);
+    return () => {
+      active = false;
+    };
+  }, [backendURL]);
 
-  const filteredPatients = useMemo(() => {
-    const now = new Date();
+  // Returns true if a single attendance record matches the active filter.
+  const matchesFilter = (att) => {
+    const d = new Date(att?.date);
+    if (Number.isNaN(d.getTime())) return false;
 
-    return enquiries.filter((item) => {
+    if (filterType === "today") {
+      return toUTCDateStr(att.date) === toUTCDateStr(now);
+    }
+    if (filterType === "thisMonth") {
+      return (
+        d.getUTCMonth() === now.getUTCMonth() &&
+        d.getUTCFullYear() === now.getUTCFullYear()
+      );
+    }
+    if (filterType === "thisYear") {
+      return d.getUTCFullYear() === now.getUTCFullYear();
+    }
+    if (filterType === "date") {
+      if (!selectedDate) return false;
+      return toUTCDateStr(att.date) === selectedDate;
+    }
+    if (filterType === "period") {
+      return (
+        d.getUTCMonth() + 1 === Number(selectedMonth) &&
+        d.getUTCFullYear() === Number(selectedYear)
+      );
+    }
+    return false;
+  };
+
+  // Compute matched patients + total Present visits for the active period.
+  const { patients, totalVisits } = useMemo(() => {
+    let visits = 0;
+    const matched = enquiries.filter((item) => {
       const attendance = item.patientId?.attendance || [];
-
-      return attendance.some((att) => {
-        const attDate = new Date(att.date);
-
-        if (filterType === "today") {
-          return attDate.toDateString() === now.toDateString();
-        }
-
-        if (filterType === "month") {
-          return (
-            attDate.getMonth() === now.getMonth() &&
-            attDate.getFullYear() === now.getFullYear()
-          );
-        }
-
-        if (filterType === "year") {
-          return attDate.getFullYear() === now.getFullYear();
-        }
-
-        if (filterType === "custom" && selectedDate) {
-          return (
-            attDate.toDateString() === new Date(selectedDate).toDateString()
-          );
-        }
-
-        return false;
-      });
+      const presentInPeriod = attendance.filter(
+        (att) => isPresent(att) && matchesFilter(att),
+      );
+      visits += presentInPeriod.length;
+      return presentInPeriod.length > 0;
     });
-  }, [enquiries, filterType, selectedDate]);
+    return { patients: matched, totalVisits: visits };
+    // matchesFilter closes over filter state; deps cover everything it reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enquiries, filterType, selectedDate, selectedMonth, selectedYear]);
 
-  console.log("enq", enquiries);
-  console.log("filteredPatients", filteredPatients);
+  // Human-readable label of the resolved period being shown.
+  const periodLabel = useMemo(() => {
+    if (filterType === "today") return `Today (${toUTCDateStr(now)})`;
+    if (filterType === "thisMonth") {
+      const m = MONTHS.find((x) => x.value === now.getUTCMonth() + 1);
+      return `This Month (${m?.label} ${now.getUTCFullYear()})`;
+    }
+    if (filterType === "thisYear") return `This Year (${now.getUTCFullYear()})`;
+    if (filterType === "date") {
+      return selectedDate ? `Date: ${selectedDate}` : "Pick a date";
+    }
+    if (filterType === "period") {
+      const m = MONTHS.find((x) => x.value === Number(selectedMonth));
+      return `${m?.label} ${selectedYear}`;
+    }
+    return "";
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterType, selectedDate, selectedMonth, selectedYear]);
+
+  const presets = [
+    { key: "today", label: "Today" },
+    { key: "thisMonth", label: "This Month" },
+    { key: "thisYear", label: "This Year" },
+    { key: "date", label: "Specific Date" },
+    { key: "period", label: "Month / Year" },
+  ];
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-semibold mb-6">Patient Attendance</h1>
+    <ReportPage>
+      <ReportToolbar title="Daily Attendance" periodLabel={periodLabel}>
+        {/* Filter presets */}
+        {presets.map((p) => (
+          <button
+            key={p.key}
+            onClick={() => setFilterType(p.key)}
+            className={`px-4 py-2 rounded-lg border text-sm transition-colors ${
+              filterType === p.key
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
 
-      {/* Filters */}
-      <div className="flex gap-4 mb-6 flex-wrap">
-        <button
-          onClick={() => setFilterType("today")}
-          className="px-4 py-2 bg-blue-500 text-white rounded"
-        >
-          Today
-        </button>
-
-        <button
-          onClick={() => setFilterType("month")}
-          className="px-4 py-2 bg-green-500 text-white rounded"
-        >
-          This Month
-        </button>
-
-        <button
-          onClick={() => setFilterType("year")}
-          className="px-4 py-2 bg-purple-500 text-white rounded"
-        >
-          This Year
-        </button>
-
-        <button
-          onClick={() => setFilterType("custom")}
-          className="px-4 py-2 bg-gray-500 text-white rounded"
-        >
-          Select Date
-        </button>
-
-        {filterType === "custom" && (
+        {/* Conditional pickers */}
+        {filterType === "date" && (
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="border px-2 py-1 rounded"
+            className="border px-2 py-2 rounded-lg text-sm"
           />
         )}
-      </div>
+
+        {filterType === "period" && (
+          <>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(Number(e.target.value))}
+              className="border px-2 py-2 rounded-lg text-sm"
+            >
+              {MONTHS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+              className="border px-2 py-2 rounded-lg text-sm"
+            >
+              {YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
+      </ReportToolbar>
+
+      {/* Metrics */}
+      {!loading && !error && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Tile
+            emoji="🧑‍🤝‍🧑"
+            label="Patients Attended"
+            value={String(patients.length)}
+            isCurrency={false}
+            tone="blue"
+            hint="Unique patients in this period"
+          />
+          <Tile
+            emoji="📅"
+            label="Total Visits"
+            value={String(totalVisits)}
+            isCurrency={false}
+            tone="emerald"
+            hint="Total Present sessions"
+          />
+        </div>
+      )}
 
       {/* Result */}
-      <div className="bg-white shadow rounded p-4">
-        <h2 className="text-lg font-medium mb-3">
-          Patients ({filteredPatients.length})
-        </h2>
-
-        {filteredPatients.length === 0 ? (
-          <p className="text-gray-500">No patients found</p>
-        ) : (
+      {loading ? (
+        <Loading label="Loading attendance…" />
+      ) : error ? (
+        <ErrorState message={error} />
+      ) : patients.length === 0 ? (
+        <EmptyState label="No patients attended in this period." />
+      ) : (
+        <Card>
+          <h2 className="text-lg font-medium text-gray-800 mb-3">
+            Patients ({patients.length})
+          </h2>
           <ul className="space-y-2">
-            {filteredPatients.map((item) => (
-              <div
+            {patients.map((item) => (
+              <li
                 key={item?._id}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between p-2 border rounded-lg hover:bg-gray-100"
               >
-                <li className="p-2 border rounded hover:bg-gray-100">
-                  {item.patientName}
-                </li>
+                <span>{item.patientName}</span>
                 <Link
                   to={`/PatientDetails/${item?.patientId?._id}`}
                   className="text-sm text-blue-600 hover:underline"
                 >
                   View Details
                 </Link>
-              </div>
+              </li>
             ))}
           </ul>
-        )}
-      </div>
-    </div>
+        </Card>
+      )}
+    </ReportPage>
   );
 };
 
